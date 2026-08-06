@@ -1,0 +1,149 @@
+import { NextResponse } from 'next/server';
+import {
+  bcrypt,
+  COOKIE_NAME,
+  createSession,
+  currentUser,
+  db,
+  sessionCookie,
+  USERNAME_RE
+} from '../../../lib/server-state.js';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+const OPENAI_URL = 'https://api.openai.com/v1/responses';
+const MODEL = process.env.OPENAI_MODEL || 'gpt-5.6';
+const anonTurnLog = new Map();
+
+function json(data, status = 200) {
+  return NextResponse.json(data, { status });
+}
+
+async function endpoint(context) {
+  return (await context.params).endpoint;
+}
+
+function requireUser(request) {
+  const user = currentUser(request);
+  return user ? { user } : { response: json({ error: 'Not logged in.' }, 401) };
+}
+
+function rateLimited(request) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown';
+  const now = Date.now();
+  const recent = (anonTurnLog.get(ip) || []).filter(time => now - time < 60 * 60 * 1000);
+  if (recent.length >= 30) return true;
+  recent.push(now);
+  anonTurnLog.set(ip, recent);
+  return false;
+}
+
+export async function GET(request, context) {
+  const name = await endpoint(context);
+  const auth = requireUser(request);
+  if (auth.response) return auth.response;
+
+  if (name === 'me') return json({ username: auth.user.username });
+  if (name === 'save') {
+    const row = db.prepare('SELECT data, updated_at AS updatedAt FROM saves WHERE user_id = ?').get(auth.user.id);
+    return row ? json({ data: JSON.parse(row.data), updatedAt: row.updatedAt }) : json({ error: 'No save found.' }, 404);
+  }
+  return json({ error: 'Not found.' }, 404);
+}
+
+export async function POST(request, context) {
+  const name = await endpoint(context);
+
+  if (name === 'logout') {
+    const token = request.cookies.get(COOKIE_NAME)?.value;
+    if (token) db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
+    const response = json({ ok: true });
+    response.cookies.set({ name: COOKIE_NAME, value: '', expires: new Date(0), path: '/' });
+    return response;
+  }
+
+  if (name === 'register' || name === 'login') {
+    const { username, password } = await request.json().catch(() => ({}));
+    if (typeof username !== 'string' || typeof password !== 'string') return json({ error: 'Username and password are required.' }, 400);
+
+    let user;
+    if (name === 'register') {
+      if (!USERNAME_RE.test(username)) return json({ error: 'Username: 3-20 characters, letters/numbers/underscore only.' }, 400);
+      if (password.length < 8) return json({ error: 'Password must be at least 8 characters.' }, 400);
+      if (db.prepare('SELECT id FROM users WHERE username = ?').get(username)) return json({ error: 'That username is already taken.' }, 409);
+      const hash = bcrypt.hashSync(password, 12);
+      const info = db.prepare('INSERT INTO users (username, password_hash, created_at) VALUES (?, ?, ?)')
+        .run(username, hash, new Date().toISOString());
+      user = { id: info.lastInsertRowid, username };
+    } else {
+      user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
+      if (!user || !bcrypt.compareSync(password, user.password_hash)) return json({ error: 'Wrong username or password.' }, 401);
+    }
+
+    const { token, expires } = createSession(user.id);
+    const response = json({ username: user.username });
+    response.cookies.set(sessionCookie(token, expires));
+    return response;
+  }
+
+  if (name === 'image') return json({ error: 'Image generation is disabled.' }, 503);
+
+  if (name === 'turn') {
+    const user = currentUser(request);
+    const { system, messages } = await request.json().catch(() => ({}));
+    if (typeof system !== 'string' || !Array.isArray(messages)) return json({ error: 'Request must include "system" (string) and "messages" (array).' }, 400);
+    if (!process.env.OPENAI_API_KEY) return json({ error: 'Server is missing OPENAI_API_KEY.' }, 500);
+    if (!user && rateLimited(request)) return json({ error: 'Guest play is limited. Sign up to keep going.' }, 429);
+
+    let upstream;
+    try {
+      upstream = await fetch(OPENAI_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+        body: JSON.stringify({ model: MODEL, instructions: system, input: messages, max_output_tokens: 1000, stream: true }),
+        signal: request.signal
+      });
+    } catch (error) {
+      console.error('Could not reach OpenAI:', error);
+      return json({ error: 'Could not reach the OpenAI API.' }, 502);
+    }
+    if (!upstream.ok || !upstream.body) {
+      const detail = await upstream.text().catch(() => '');
+      console.error('OpenAI API error:', upstream.status, detail);
+      return json({ error: 'OpenAI API returned an error.', detail }, upstream.status);
+    }
+    return new Response(upstream.body, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache, no-transform',
+        'X-Accel-Buffering': 'no'
+      }
+    });
+  }
+
+  return json({ error: 'Not found.' }, 404);
+}
+
+export async function PUT(request, context) {
+  if (await endpoint(context) !== 'save') return json({ error: 'Not found.' }, 404);
+  const auth = requireUser(request);
+  if (auth.response) return auth.response;
+  const data = await request.json().catch(() => null);
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return json({ error: 'Save payload must be an object.' }, 400);
+  const serialized = JSON.stringify(data);
+  if (serialized.length > 2_000_000) return json({ error: 'Save is too large.' }, 413);
+  const now = new Date().toISOString();
+  db.prepare(`INSERT INTO saves (user_id, data, updated_at) VALUES (?, ?, ?)
+    ON CONFLICT(user_id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at`)
+    .run(auth.user.id, serialized, now);
+  return json({ ok: true, updatedAt: now });
+}
+
+export async function DELETE(request, context) {
+  if (await endpoint(context) !== 'save') return json({ error: 'Not found.' }, 404);
+  const auth = requireUser(request);
+  if (auth.response) return auth.response;
+  db.prepare('DELETE FROM saves WHERE user_id = ?').run(auth.user.id);
+  return json({ ok: true });
+}

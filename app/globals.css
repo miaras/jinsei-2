@@ -1,0 +1,7 @@
+html,
+body {
+  margin: 0;
+}
+
+/* The game stylesheet is embedded by app/page.js while the UI is migrated
+   from its original single-file implementation. */
