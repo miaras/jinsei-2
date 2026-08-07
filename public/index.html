@@ -529,6 +529,32 @@ aside{
     <div id="legal-body"></div>
   </article>
 </section>
+<template id="legal-terms">
+  <h1>Terms of Service</h1><p class="legal-date">Effective date: August 8, 2026</p>
+  <p>JINSEI is a language-learning, interactive fiction service. By using it, you agree to these terms.</p>
+  <h2>Your account and saved lives</h2><p>You are responsible for the information you submit and for keeping your account credentials secure. Do not use the service for unlawful, harmful, or abusive activity.</p>
+  <h2>Subscriptions and billing</h2><p>The free plan includes a limited number of story turns. Paid plans are monthly subscriptions: Unlimited is US$4.99 per month and Unlimited + Pictures is US$9.99 per month, before applicable taxes shown at checkout. Subscriptions renew automatically unless cancelled before the next billing date.</p><p>Paddle acts as merchant of record and handles payment processing, taxes, invoices, cancellations, and payment-method changes.</p>
+  <h2>Content and availability</h2><p>AI-generated story text, translations, audio, and images can be inaccurate or unsuitable. They are provided for entertainment and language practice, not professional advice. We may change, suspend, or discontinue features when reasonably necessary.</p>
+  <h2>Acceptable use</h2><p>Do not bypass plan controls, disrupt the service, scrape it at scale, or submit content that infringes others’ rights or violates law.</p>
+  <h2>Liability</h2><p>To the extent permitted by law, JINSEI is provided “as is” and “as available.” Nothing in these terms limits rights that cannot legally be limited.</p>
+</template>
+<template id="legal-privacy">
+  <h1>Privacy Notice</h1><p class="legal-date">Effective date: August 8, 2026</p>
+  <p>This notice explains how JINSEI processes personal data when you use the service.</p>
+  <h2>Information we process</h2><p>We process account details, saved-game information, game messages and actions, learned words, subscription status, and technical information needed to operate and protect the service. Paddle processes payment details; JINSEI does not store full payment-card numbers.</p>
+  <h2>How we use it</h2><p>We use this information to provide the game, save and resume lives, enforce plan limits, provide support, prevent abuse, and maintain the service. For paid picture generation, prompts and game context are processed to generate the requested scene.</p>
+  <h2>Service providers</h2><p>We use Supabase for authentication, database, and storage; Paddle for merchant-of-record billing; OpenRouter for story-model access; Replicate for paid image generation; and Google Cloud Text-to-Speech where enabled.</p>
+  <h2>Retention and deletion</h2><p>We retain account and saved-life data while your account is active or as needed to provide the service, resolve disputes, meet legal obligations, and prevent fraud. Billing records may be retained where required by law.</p>
+  <h2>Your choices</h2><p>You can stop using the service, cancel through Paddle’s customer portal, and request access, correction, or deletion where applicable law provides those rights. We do not sell personal information or use game content for targeted advertising.</p>
+</template>
+<template id="legal-refunds">
+  <h1>Refund Policy</h1><p class="legal-date">Effective date: August 8, 2026</p>
+  <p>Paid JINSEI plans are monthly digital subscriptions sold by Paddle as merchant of record.</p>
+  <h2>Cancellation</h2><p>You can cancel at any time through Paddle’s customer portal. Cancellation stops future renewal charges; paid access continues until the end of the current billing period unless otherwise required by law.</p>
+  <h2>Refund requests</h2><p>If you were charged in error, experienced a material technical issue that we cannot resolve, or believe a charge was unauthorized, contact support promptly with your Paddle transaction details. Requests are assessed case by case without limiting applicable consumer rights.</p>
+  <h2>Non-refundable use</h2><p>Except where required by law, we generally cannot refund a billing period after substantial use of the subscription or generated-picture benefit. Cancelling does not automatically refund the current or a past billing period.</p>
+  <h2>How refunds are issued</h2><p>Approved refunds are processed by Paddle to the original payment method when possible. Processing times depend on the payment provider.</p>
+</template>
 
 <!-- ================= SETUP (default landing screen — Play needs no account) ================= -->
 <section id="setup">
@@ -866,23 +892,14 @@ async function refreshPlan(){
 }
 function openPlans(){ renderPlanUI(); $('plans').classList.remove('hide'); }
 function closePlans(){ $('plans').classList.add('hide'); }
-async function openLegal(path){
-  $('legal-body').innerHTML='<div class="legal-loading">Loading…</div>';
+function openLegal(path){
+  const key=String(path).replace(/^\//,'').replace(/\/$/,'');
+  const template=$(`legal-${key}`);
+  if(!template) return;
+  $('legal-body').replaceChildren(template.content.cloneNode(true));
   $('legal-modal').classList.remove('hide');
-  try{
-    const response=await fetch(path,{credentials:'same-origin'});
-    if(!response.ok) throw new Error('Legal document unavailable.');
-    const documentCopy=new DOMParser().parseFromString(await response.text(),'text/html');
-    const content=documentCopy.querySelector('.legal-content');
-    if(!content) throw new Error('Legal document unavailable.');
-    content.querySelector('.legal-nav')?.remove();
-    content.querySelector('.legal-brand')?.remove();
-    $('legal-body').innerHTML=content.innerHTML;
-    $('legal-card').scrollTop=0;
-    $('legal-close').focus();
-  }catch(e){
-    $('legal-body').innerHTML='<div class="legal-loading">This document could not be loaded. Please try again.</div>';
-  }
+  $('legal-card').scrollTop=0;
+  $('legal-close').focus();
 }
 function closeLegal(){ $('legal-modal').classList.add('hide'); $('legal-body').innerHTML=''; }
 async function startCheckout(plan){
