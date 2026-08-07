@@ -101,6 +101,8 @@ input{font-family:inherit}
 .level-btn .en{font-size:11.5px;color:var(--ink-soft);display:block;margin-top:3px}
 .level-btn.sel{border-color:var(--ai);background:var(--ai-soft);transform:translate(-1px,-1px);box-shadow:2px 2px 0 var(--ai)}
 .world-levels{grid-template-columns:repeat(2,1fr);margin-bottom:22px}
+.destination-btn .jp{font-size:23px}
+.destination-btn .en{font-size:10.5px}
 .hardcore-btn .jp{color:var(--shu)}
 .hardcore-btn.sel{border-color:var(--shu);background:rgba(185,58,46,.1);box-shadow:2px 2px 0 var(--shu)}
 #begin-btn{
@@ -431,10 +433,8 @@ aside{
   <div class="setup-sub">A life, spoken into being</div>
   <h1 class="setup-title">人生</h1>
   <div class="setup-sub" style="letter-spacing:.5em">JINSEI</div>
-  <p class="setup-lede">
-    You land at Narita with a suitcase, ¥180,000, and whatever Japanese you carry in your head.
-    Find work. Find a home. Find people. Nobody here will switch to English for you —
-    the life you build is made of the words you can say.
+  <p class="setup-lede" id="setup-lede">
+    Choose where to begin. Find work. Find a home. Find people. The life you build is made of the words you can say.
   </p>
   <div class="setup-card" id="setup-card">
     <div id="continue-block" style="display:none;margin-bottom:22px;padding-bottom:20px;border-bottom:1px dashed var(--line)">
@@ -447,7 +447,13 @@ aside{
     </div>
     <label class="field-label" for="name-input">Your name / 名前</label>
     <input id="name-input" placeholder="e.g. Miara" maxlength="24" autocomplete="off">
-    <span class="field-label">Your Japanese / 日本語のレベル</span>
+    <span class="field-label">Your destination / 行き先</span>
+    <div class="levels" id="destinations">
+      <button class="level-btn destination-btn sel" data-country="japan"><span class="jp">日本</span><span class="en">Japan · Japanese</span></button>
+      <button class="level-btn destination-btn" data-country="china"><span class="jp">中国</span><span class="en">China · Mandarin</span></button>
+      <button class="level-btn destination-btn" data-country="korea"><span class="jp">한국</span><span class="en">Korea · Korean</span></button>
+    </div>
+    <span class="field-label" id="language-label">Your Japanese / 日本語のレベル</span>
     <div class="levels" id="levels">
       <button class="level-btn" data-lv="zero"><span class="jp">ゼロ</span><span class="en">A few words at best</span></button>
       <button class="level-btn sel" data-lv="basic"><span class="jp">少し</span><span class="en">Survival phrases</span></button>
@@ -539,11 +545,11 @@ aside{
    DEPLOYMENT
    ---------------------------------------------------------------------
    This page talks to '/api/turn', a small Node/Express server (see
-   server.js next to this file) that holds the OpenAI API key and
+   Next.js route handler that holds the Anthropic API key and
    streams the response straight through. Run it with:
 
      npm install
-     cp .env.example .env   # then add your OPENAI_API_KEY
+     cp .env.example .env   # then add your ANTHROPIC_API_KEY
      npm start
 
 ===================================================================== */
@@ -551,7 +557,7 @@ const API_ENDPOINT = '/api/turn';
 
 /* ================= STATE ================= */
 const S = {
-  name:'', level:'basic', hardcore:false,
+  name:'', country:'japan', level:'basic', hardcore:false,
   state:{ day:1, time:'afternoon', location:'Narita Airport', yen:180000,
           hunger:85, health:100, alive:true,
           job:null, visa:'Temporary Visitor (90 days)', relationships:[], flags:[] },
@@ -559,35 +565,43 @@ const S = {
   turnCount:0, signupPrompted:false, summary:''
 };
 const HINT_COST = 500;
-const LV_DESC = {
-  zero:'an absolute beginner (knows perhaps konnichiwa and arigatou). NPCs must use the very simplest Japanese, short sentences, and gesture a lot. Judge attempts extremely leniently; single words count as communication.',
-  basic:'a survival-level speaker (greetings, numbers, simple requests). NPCs use plain short sentences. Judge leniently; reward any comprehensible attempt.',
-  conv:'a daily-conversation speaker (roughly JLPT N4–N3). NPCs speak naturally but clearly, occasionally using casual forms and keigo. Judge with normal standards; expect particles and conjugation, but minor errors still communicate.'
+const DESTINATIONS = {
+  japan:{country:'Japan',language:'Japanese',script:'日本語',romanization:'rōmaji',arrival:'Narita Airport',cash:180000,currency:'¥',currencyName:'yen',visa:'Temporary Visitor (90 days)',lede:'You land at Narita with a suitcase, ¥180,000, and whatever Japanese you carry in your head.'},
+  china:{country:'China',language:'Mandarin Chinese',script:'中文',romanization:'pinyin',arrival:'Shanghai Pudong Airport',cash:8000,currency:'¥',currencyName:'yuan',visa:'Temporary Visitor',lede:'You land in Shanghai with a suitcase, ¥8,000, and whatever Mandarin you carry in your head.'},
+  korea:{country:'Korea',language:'Korean',script:'한국어',romanization:'romanization',arrival:'Incheon International Airport',cash:800000,currency:'₩',currencyName:'won',visa:'Temporary Visitor (90 days)',lede:'You land at Incheon with a suitcase, ₩800,000, and whatever Korean you carry in your head.'}
 };
+const destination=()=>DESTINATIONS[S.country]||DESTINATIONS.japan;
+const languageDescription=()=>({
+  zero:`an absolute beginner in ${destination().language}. NPCs must use the very simplest language, short sentences, and gesture a lot. Judge attempts extremely leniently; single words count as communication.`,
+  basic:`a survival-level ${destination().language} speaker (greetings, numbers, simple requests). NPCs use plain short sentences. Judge leniently; reward any comprehensible attempt.`,
+  conv:`a daily-conversation ${destination().language} speaker. NPCs speak naturally but clearly. Judge with normal standards; expect basic grammar, but minor errors still communicate.`
+})[S.level];
 
-const SYSTEM = () => `You are the game engine of 人生 (JINSEI), a slice-of-life text adventure set in present-day Japan that doubles as a Japanese teacher. The player, ${S.name}, has just moved to Japan alone and must build an entire life — job hunting, apartment, friendships, romance, maybe marriage, visa renewals, festivals, illness, everything — over months of in-game time. The player's Japanese level: ${LV_DESC[S.level]}
+const SYSTEM = () => `You are the game engine of 人生 (JINSEI), a slice-of-life text adventure set in present-day ${destination().country} that doubles as a ${destination().language} teacher. The player, ${S.name}, has just moved to ${destination().country} alone and must build an entire life — job hunting, apartment, friendships, romance, maybe marriage, visa renewals, festivals, illness, everything — over months of in-game time. The player's ${destination().language} level: ${languageDescription()}
 
 ${S.summary ? `STORY SO FAR (a running summary of everything that happened before the recent messages below — the recent message history is truncated to save space, so THIS is your memory of earlier events; treat it as canon and keep continuity with it):\n${S.summary}\n` : ''}
-CORE RULE — THE LANGUAGE GATE: The player must communicate in Japanese (rōmaji input is fine and should be read as Japanese) to accomplish anything. If they write in English, NPCs respond with polite confusion (「すみません、英語はちょっと…」) and the situation does not advance — except rare NPCs who plausibly know some English, who may help a little but push the player toward Japanese. Never let English fully succeed.
+CORE RULE — THE LANGUAGE GATE: The player must communicate in ${destination().language} (${destination().romanization} input is fine and should be read as ${destination().language}) to accomplish anything. If they write in English, NPCs respond with polite confusion in the local language and the situation does not advance — except rare NPCs who plausibly know some English, who may help a little but push the player toward ${destination().language}. Never let English fully succeed.
 
-ACTIONS: Text wrapped in asterisks is a physical action, not speech — e.g. *wait*, *point at the menu*, *bow*, *hand over 1000 yen*. Actions may be written in English; they bypass the language gate because they are non-verbal. Narrate their consequences realistically. Gesturing and pointing can get simple things done (as in real Japan) but anything requiring words — jobs, friendships, paperwork, romance — still demands spoken Japanese. A message can mix both: *bowing* sumimasen. When a turn is action-only, FEEDBACK should be UNDERSTOOD: none, not a language judgment.
+ACTIONS: Text wrapped in asterisks is a physical action, not speech — e.g. *wait*, *point at the menu*, *bow*, *hand over money*. Actions may be written in English; they bypass the language gate because they are non-verbal. Gesturing can get simple things done, but anything requiring words — jobs, friendships, paperwork, romance — still demands spoken ${destination().language}. When a turn is action-only, FEEDBACK should be UNDERSTOOD: none, not a language judgment.
 
 STORY RULES:
-- ${S.hardcore ? 'Recognizably Japan — same trains, konbini, paperwork, seasons — but tonally unstable: specific and concrete in its details, uncanny and often darkly funny in how those details behave. Small moments still matter, they just don\'t always make sense.' : 'Grounded, warm, specific. Real neighborhoods, konbini, trains, izakaya, city hall paperwork, seasons. Small moments matter.'}
+- ${S.hardcore ? `Recognizably ${destination().country} — its transit, food, bureaucracy, neighborhoods, and seasons — but tonally unstable: specific and concrete in its details, uncanny and often darkly funny in how those details behave.` : `Grounded, warm, specific. Real neighborhoods, transit, food, city paperwork, seasons, and social customs in ${destination().country}. Small moments matter.`}
 - Continue long arcs across turns using the state and history provided. Introduce recurring NPCs with names and personalities; deepen relationships gradually (level 1-5).
-- Advance time realistically. Spend and earn yen realistically (rent, food, wages). If money runs low, life gets hard.
+- Advance time realistically. Spend and earn ${destination().currencyName} realistically (rent, food, wages). If money runs low, life gets hard.
 - Award a "milestone" ONLY for major life events: FIRST FRIEND, GOT A JOB, APARTMENT, FIRST DATE, PROMOTION, ENGAGED, MARRIED, VISA RENEWED, DIED, etc. (short, in caps, max 3 words). Otherwise write NONE.
 - Teach: NPC lines should be natural for the player's level, and each turn introduce 0-2 genuinely useful words.
-- Judge the player's Japanese in FEEDBACK: UNDERSTOOD yes/partial/no. Give ONE short coaching NOTE and, if helpful, a corrected/improved sentence in BETTER (Japanese + rōmaji in parentheses). Be encouraging, never pedantic. If there is no player utterance to judge (game start, or an action-only turn), write UNDERSTOOD: none, NOTE: none, BETTER: none.
+- Judge the player's ${destination().language} in FEEDBACK: UNDERSTOOD yes/partial/no. Give ONE short coaching NOTE and, if helpful, a corrected/improved sentence in BETTER (${destination().language} + ${destination().romanization} in parentheses). Be encouraging, never pedantic. If there is no player utterance to judge, write UNDERSTOOD: none, NOTE: none, BETTER: none.
 - Keep everything SHORT. Narration 2-3 sentences. One NPC line per turn, 1-2 sentences.
 
 SURVIVAL — HUNGER, HEALTH, DEATH: This life has real stakes. Track "hunger" and "health" (0-100 each) in STATE every turn.
-- Hunger drains steadily with time (roughly ${S.hardcore ? '15-30' : '10-20'} per skipped meal or half-day of neglect). Eating a real meal restores it substantially (40-70); a konbini snack helps a little (15-25).
+- Hunger drains steadily with time (roughly ${S.hardcore ? '15-30' : '10-20'} per skipped meal or half-day of neglect). Eating a real meal restores it substantially (40-70); a small snack helps a little (15-25).
 - If hunger sits at or near 0 for multiple turns in a row, health starts draining too (hunger damage), and narration should reflect it: shakiness, dizziness, trouble concentrating (which can plausibly make their Japanese worse under FEEDBACK).
 - Health can also drop directly from illness or injury — see WORLD TONE below. If health reaches 0, the player dies. Write a${S.hardcore ? ' final NARRATION that stays in this world\'s register — it can be as understated, absurd, or darkly funny as everything else, but never gratuitous or graphic' : ' somber, dignified, non-graphic final NARRATION (no gore, no suffering lingered on)'}, set "alive":false in STATE, and set MILESTONE to DIED. Do not continue the story after this; the game ends here.
 - These numbers move gradually and telegraphed — never a sudden 0 out of nowhere with no warning across prior turns. The player should generally see it coming if they're paying attention to their own state.
 
 ${S.hardcore ? `WORLD TONE — HARDCORE (鬼畜モード): This is not a friendly world, and it is not even a reliably sane one. It is recognizably Japan, but the ground rules are unstable and often absurd: a form is rejected for a reason that flatly contradicts what an official told the player five minutes earlier; an office the player must visit has moved floors overnight, or no longer seems to exist; an official's name or face is subtly different the second time the player meets them and no one else finds this strange. NPCs can be uncannily calm about impossible things, overly formal in absurd circumstances, or speak in riddles and non sequiturs the player still must parse and respond to correctly in Japanese. Time and space can bend slightly — a five-minute train ride might swallow an afternoon, a hallway might loop back on itself. Luck is actively unfriendly, and misfortune is more frequent and sometimes disproportionate to anything the player did. Play this for dark, deadpan comedy — Kafka doing a bit, not despair. The LANGUAGE GATE stays completely real regardless of how strange things get: absurdity never lets English work, and correct Japanese remains the player's sharpest tool, just no longer any guarantee of a fair outcome. Keep it coherent and legible turn to turn even when it's strange — the player should always be able to tell what just happened, even if they can't tell why.` : `WORLD TONE — hostile and a little arbitrary: This is not a friendly tutorial world. Japan should sometimes be unfair, indifferent, or bureaucratic in ways the player didn't cause and can't always talk their way out of, even with correct Japanese — a shop closes early without warning, a train is suspended, a landlord is unreasonable, paperwork gets rejected on a technicality, someone is simply rude. Occasionally (not every turn — sparingly, so it lands) something bad happens with no fair warning: minor food poisoning from a sketchy stand, a cold caught on a packed train, a slip on icy stairs, a wallet lightened by a pickpocket. These should feel like real texture, not punishment for a specific mistake, and should never be so frequent or severe that the game feels unwinnable or sadistic — Japanese competence should still be the player's single best tool for building a stable life, just not an absolute shield against bad luck.`}
+
+COUNTRY PRIORITY: The selected destination is ${destination().country}. Every place, institution, social custom, currency, language correction, immigration rule, and daily detail MUST belong to ${destination().country}. Do not mention Japan, Japanese, yen, or Japanese-specific institutions unless the selected destination is Japan.
 
 OUTPUT FORMAT — critical: your output is displayed to the player character-by-character as you generate it (streaming), so narration and NPC speech must appear FIRST, in the order the player should see them, before any structured data. Respond in PLAIN TEXT ONLY — no markdown, no code fences, no JSON wrapper around the whole thing — using EXACTLY these markers, each alone on its own line, in this exact order. Omit the whole @@NPC@@ section if no NPC speaks this turn. Every other section must always appear; write NONE where nothing applies.
 
@@ -595,17 +609,17 @@ OUTPUT FORMAT — critical: your output is displayed to the player character-by-
 (2-3 sentences, second person, English, present tense)
 @@NPC@@
 NAME: (npc name or role)
-JP: (Japanese line)
-ROMAJI: (rōmaji reading)
+JP: (${destination().language} line)
+ROMAJI: (${destination().romanization} reading)
 EN: (English translation)
 @@FEEDBACK@@
 UNDERSTOOD: yes|partial|no|none
 NOTE: (one short coaching sentence, or none)
-BETTER: (improved Japanese with rōmaji in parentheses, or none)
+BETTER: (improved ${destination().language} with ${destination().romanization} in parentheses, or none)
 @@VOCAB@@
 (0-2 lines, each exactly "jp | romaji | english meaning", or a single line NONE)
 @@SUGGESTIONS@@
-(2-3 short rōmaji phrases the player might try next, one per line)
+(2-3 short ${destination().romanization} phrases the player might try next, one per line)
 @@SCENE@@
 (one vivid, purely VISUAL sentence describing the CURRENT setting for a text-to-image model — place, light, weather, objects, textures, mood. 12-25 words. ABSOLUTELY NO PEOPLE: no characters, no bodies, no faces, no figures, not even implied ones like "a queue of commuters" or "a crowded platform" — describe the empty space itself. Match the tone already established above.)
 @@STATE@@
@@ -624,6 +638,19 @@ const stream = $('stream');
 document.querySelectorAll('#levels .level-btn').forEach(b=>{
   b.onclick=()=>{document.querySelectorAll('#levels .level-btn').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');S.level=b.dataset.lv;};
 });
+function updateDestinationUI(){
+  const d=destination();
+  $('setup-lede').textContent=`${d.lede} Find work. Find a home. Find people. The life you build is made of the words you can say.`;
+  $('language-label').textContent=`Your ${d.language} / ${d.script} のレベル`;
+  $('say').placeholder=`Speak in ${d.language}… (${d.romanization} OK)`;
+}
+document.querySelectorAll('#destinations .destination-btn').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('#destinations .destination-btn').forEach(x=>x.classList.remove('sel'));
+    b.classList.add('sel'); S.country=b.dataset.country; updateDestinationUI();
+  };
+});
+updateDestinationUI();
 document.querySelectorAll('#world-toggle .level-btn').forEach(b=>{
   b.onclick=()=>{
     document.querySelectorAll('#world-toggle .level-btn').forEach(x=>x.classList.remove('sel'));
@@ -640,7 +667,7 @@ function renderVocabReview(){
   const count=$('vocab-review-count');
   count.textContent=`${S.vocab.length} word${S.vocab.length===1?'':'s'}`;
   if(!S.vocab.length){
-    list.innerHTML='<p class="vocab-review-empty">Words you learn during your life in Japan will appear here.<br>語彙は、物語の中で出会うたびに増えていきます。</p>';
+    list.innerHTML=`<p class="vocab-review-empty">Words you learn during your life in ${destination().country} will appear here.<br>語彙は、物語の中で出会うたびに増えていきます。</p>`;
     return;
   }
   list.innerHTML=S.vocab.map(w=>
@@ -770,7 +797,7 @@ async function initIdentity(){
 /* ---- persistence: server-side for accounts, localStorage for guests ---- */
 async function saveGame(){
   const payload = {
-    name:S.name, level:S.level, hardcore:S.hardcore, state:S.state, vocab:S.vocab,
+    name:S.name, country:S.country, level:S.level, hardcore:S.hardcore, state:S.state, vocab:S.vocab,
     history:S.history, stamps:S.stamps, streamHTML: stream.innerHTML,
     turnCount:S.turnCount||0, signupPrompted:!!S.signupPrompted, summary:S.summary||'',
     savedAt: Date.now()
@@ -809,7 +836,7 @@ async function checkForSave(){
   $('continue-block').style.display='block';
   const days = save.state.day;
   $('continue-summary').textContent =
-    `${save.name} · Day ${days} · ${save.state.location||'?'} · ¥${Number(save.state.yen).toLocaleString()}`
+    `${save.name} · Day ${days} · ${save.state.location||'?'} · ${(DESTINATIONS[save.country||'japan']||destination()).currency}${Number(save.state.yen).toLocaleString()}`
     + (save.state.job?` · ${save.state.job}`:'');
   $('continue-btn').onclick=()=>resumeGame(save);
   $('wipe-btn').onclick=async ()=>{
@@ -821,7 +848,7 @@ async function checkForSave(){
   };
 }
 function resumeGame(save){
-  S.name=save.name; S.level=save.level; S.hardcore=!!save.hardcore; S.state=save.state; S.vocab=save.vocab||[];
+  S.name=save.name; S.country=save.country||'japan'; S.level=save.level; S.hardcore=!!save.hardcore; S.state=save.state; S.vocab=save.vocab||[];
   S.history=save.history||[]; S.stamps=save.stamps||[];
   S.turnCount=save.turnCount||0; S.signupPrompted=!!save.signupPrompted; S.summary=save.summary||'';
   $('setup').classList.add('hide');
@@ -845,8 +872,10 @@ async function start(){
   $('setup').classList.add('hide');
   $('game').classList.add('on');
   $('statusbar').classList.remove('hide');
+  const d=destination();
+  S.state={ day:1, time:'afternoon', location:d.arrival, yen:d.cash, hunger:85, health:100, alive:true, job:null, visa:d.visa, relationships:[], flags:[] };
   renderCard();
-  await turn(null, `[GAME START] ${S.name} has just cleared customs at Narita Airport, Day 1, afternoon, with ¥180,000, one suitcase, hunger 85, health 100. ${S.hardcore ? 'HARDCORE MODE IS ON — establish the uncanny, absurd register from the very first scene, but keep the opening legible and playable, not disorienting for its own sake.' : ''} Open the story: set the scene vividly but briefly, have the first NPC encounter happen naturally (someone the player must speak Japanese with to get what they need — e.g. finding the right train into Tokyo). Give suggestions suited to their level.`);
+  await turn(null, `[GAME START] ${S.name} has just cleared customs at ${d.arrival}, Day 1, afternoon, with ${d.currency}${d.cash.toLocaleString()}, one suitcase, hunger 85, health 100. Open the story: set the scene vividly but briefly, have the first NPC encounter happen naturally (someone the player must speak ${d.language} with to get what they need — e.g. finding the right local transit). Give suggestions suited to their level.`);
 }
 
 /* ================= SIGN-UP NUDGE (guest players, after their 10th turn) ================= */
@@ -1011,8 +1040,8 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
         if(!payload || payload==='[DONE]') continue;
         let evt;
         try{ evt=JSON.parse(payload); }catch(e){ continue; }
-        if(evt.type==='response.output_text.delta' && typeof evt.delta==='string'){
-          buf += evt.delta;
+        if(evt.type==='content_block_delta' && evt.delta && evt.delta.type==='text_delta'){
+          buf += evt.delta.text;
           gotAnyText=true;
           scheduleRender();
         }
@@ -1230,7 +1259,7 @@ function renderCard(){
   $('sb-hunger').className='sb-val '+valClass(hunger);
   $('sb-health').textContent=health+'%';
   $('sb-health').className='sb-val '+valClass(health);
-  $('sb-yen').textContent='¥'+Number(st.yen).toLocaleString();
+  $('sb-yen').textContent=destination().currency+Number(st.yen).toLocaleString();
   $('c-name').textContent=S.name;
   $('c-visa').textContent=st.visa||'—';
   $('c-day').textContent='Day '+st.day+' · '+(TIME_JP[st.time]||st.time);
@@ -1238,7 +1267,7 @@ function renderCard(){
   $('c-hunger').innerHTML=`<span class="meter ${meterClass(hunger)}"><i style="width:${hunger}%"></i></span><span class="meter-pct">${hunger}%</span>`;
   $('c-health').innerHTML=`<span class="meter ${meterClass(health)}"><i style="width:${health}%"></i></span><span class="meter-pct">${health}%</span>`;
   $('c-job').textContent=st.job||'無職 · none';
-  $('c-yen').textContent='¥'+Number(st.yen).toLocaleString();
+  $('c-yen').textContent=destination().currency+Number(st.yen).toLocaleString();
 
   if(st.alive===false) lockForDeath();
 

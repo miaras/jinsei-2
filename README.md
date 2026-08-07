@@ -2,13 +2,13 @@
 
 JINSEI is an AI-powered life simulator about arriving in Japan with limited money, limited Japanese, and no established life. Players communicate in Japanese or rōmaji, find work and housing, form relationships, and build a persistent story one turn at a time.
 
-The application uses Next.js, the OpenAI Responses API, and Supabase Postgres. Accounts are optional: guests save locally in their browser, while registered players can continue the same life across devices.
+The application uses Next.js, Claude Haiku via Anthropic's Messages API, and Supabase Postgres. Accounts are optional: guests save locally in their browser, while registered players can continue the same life across devices.
 
 ## Requirements
 
 - Node.js 24 (`24.13.1` is specified in `.nvmrc`)
 - npm
-- An OpenAI API key
+- An Anthropic API key
 - A Supabase project and server-side secret key
 
 ## Local setup
@@ -20,10 +20,10 @@ npm install
 cp .env.example .env
 ```
 
-Add your OpenAI API key to `.env`:
+Add your Anthropic API key to `.env`:
 
 ```dotenv
-OPENAI_API_KEY=sk-your-key-here
+ANTHROPIC_API_KEY=sk-ant-your-key-here
 SUPABASE_URL=https://jotioxgrharwfndnxoir.supabase.co
 SUPABASE_SECRET_KEY=sb_secret_your-secret-key-here
 ```
@@ -40,14 +40,14 @@ Open [http://localhost:3000](http://localhost:3000).
 
 | Variable | Required | Default | Description |
 | --- | --- | --- | --- |
-| `OPENAI_API_KEY` | Yes | — | Server-side key used for generated game turns. |
-| `OPENAI_MODEL` | No | `gpt-5.6` | OpenAI model used by the turn endpoint. |
+| `ANTHROPIC_API_KEY` | Yes | — | Server-side key used for generated game turns. |
+| `ANTHROPIC_MODEL` | No | `claude-haiku-4-5-20251001` | Claude model used by the turn endpoint. |
 | `SUPABASE_URL` | Yes | — | Supabase project API URL. |
 | `SUPABASE_SECRET_KEY` | Yes | — | Server-only secret key used for database operations. |
 | `PORT` | No | `3000` | Port used by the production server. |
 | `COOKIE_SECURE` | No | `false` | Set to `true` when the site is served over HTTPS. |
 
-Never expose `OPENAI_API_KEY` or `SUPABASE_SECRET_KEY` to browser code or commit `.env`. In particular, do not prefix the Supabase secret with `NEXT_PUBLIC_`.
+Never expose `ANTHROPIC_API_KEY` or `SUPABASE_SECRET_KEY` to browser code or commit `.env`. In particular, do not prefix the Supabase secret with `NEXT_PUBLIC_`.
 
 Image generation is currently disabled. The `/api/image` endpoint returns HTTP `503`, and `REPLICATE_API_TOKEN` is not used.
 
@@ -96,11 +96,11 @@ scripts/
 | `GET` | `/api/save` | Load the account's saved life. |
 | `PUT` | `/api/save` | Create or replace the account's saved life. |
 | `DELETE` | `/api/save` | Delete the account's saved life. |
-| `POST` | `/api/turn` | Stream one generated game turn from OpenAI. |
+| `POST` | `/api/turn` | Stream one generated game turn from Claude Haiku. |
 | `POST` | `/api/image` | Disabled; returns HTTP `503`. |
 | `GET` | `/health` | Report server, key, and image status. |
 
-The browser sends conversation content to `/api/turn`, but the server controls the OpenAI key, model, and output-token limit. OpenAI streaming events are forwarded to the browser as server-sent events.
+The browser sends conversation content to `/api/turn`, but the server controls the Anthropic key, model, and output-token limit. Anthropic streaming events are forwarded to the browser as server-sent events.
 
 Guest turns are limited per IP as a basic cost safeguard. Registered users are not subject to that guest limit.
 
@@ -136,7 +136,7 @@ npm start
 
 For production deployments:
 
-- Provide `OPENAI_API_KEY` through the platform's secret manager.
+- Provide `ANTHROPIC_API_KEY` through the platform's secret manager.
 - Set `COOKIE_SECURE=true` when using HTTPS.
 - Configure `SUPABASE_URL` and `SUPABASE_SECRET_KEY` as server-side deployment secrets.
 - Avoid buffering `/api/turn` in a reverse proxy, because buffering prevents text from appearing incrementally.
@@ -146,7 +146,7 @@ For production deployments:
 
 ### `/api/turn` reports a missing key
 
-Confirm `.env` contains `OPENAI_API_KEY`, then restart the development or production server. Next.js loads environment variables when the server starts.
+Confirm `.env` contains `ANTHROPIC_API_KEY`, then restart the development or production server. Next.js loads environment variables when the server starts.
 
 ### Account routes report missing Supabase configuration
 

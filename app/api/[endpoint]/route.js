@@ -12,8 +12,9 @@ import {
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const OPENAI_URL = 'https://api.openai.com/v1/responses';
-const MODEL = process.env.OPENAI_MODEL || 'gpt-5.6';
+const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
+const ANTHROPIC_VERSION = '2023-06-01';
+const MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001';
 const anonTurnLog = new Map();
 
 function json(data, status = 200) {
@@ -115,25 +116,25 @@ export async function POST(request, context) {
     const user = await currentUser(request);
     const { system, messages } = await request.json().catch(() => ({}));
     if (typeof system !== 'string' || !Array.isArray(messages)) return json({ error: 'Request must include "system" (string) and "messages" (array).' }, 400);
-    if (!process.env.OPENAI_API_KEY) return json({ error: 'Server is missing OPENAI_API_KEY.' }, 500);
+    if (!process.env.ANTHROPIC_API_KEY) return json({ error: 'Server is missing ANTHROPIC_API_KEY.' }, 500);
     if (!user && rateLimited(request)) return json({ error: 'Guest play is limited. Sign up to keep going.' }, 429);
 
     let upstream;
     try {
-      upstream = await fetch(OPENAI_URL, {
+      upstream = await fetch(ANTHROPIC_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-        body: JSON.stringify({ model: MODEL, instructions: system, input: messages, max_output_tokens: 1000, stream: true }),
+        headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': ANTHROPIC_VERSION },
+        body: JSON.stringify({ model: MODEL, system, messages, max_tokens: 1000, stream: true }),
         signal: request.signal
       });
     } catch (error) {
-      console.error('Could not reach OpenAI:', error);
-      return json({ error: 'Could not reach the OpenAI API.' }, 502);
+      console.error('Could not reach Anthropic:', error);
+      return json({ error: 'Could not reach the Anthropic API.' }, 502);
     }
     if (!upstream.ok || !upstream.body) {
       const detail = await upstream.text().catch(() => '');
-      console.error('OpenAI API error:', upstream.status, detail);
-      return json({ error: 'OpenAI API returned an error.', detail }, upstream.status);
+      console.error('Anthropic API error:', upstream.status, detail);
+      return json({ error: 'Anthropic API returned an error.', detail }, upstream.status);
     }
     return new Response(upstream.body, {
       headers: {
