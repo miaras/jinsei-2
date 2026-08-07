@@ -35,41 +35,41 @@ function appOrigin(request) {
   return (process.env.APP_URL || new URL(request.url).origin).replace(/\/$/, '');
 }
 
-async function stripeRequest(path, params) {
-  if (!process.env.STRIPE_SECRET_KEY) throw new Error('STRIPE_SECRET_KEY is not configured.');
-  const response = await fetch(`https://api.stripe.com/v1${path}`, {
-    method: params ? 'POST' : 'GET',
+async function paddleRequest(path, body) {
+  if (!process.env.PADDLE_API_KEY) throw new Error('PADDLE_API_KEY is not configured.');
+  const response = await fetch(`https://api.paddle.com${path}`, {
+    method: body === undefined ? 'GET' : 'POST',
     headers: {
-      'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}`,
-      ...(params ? { 'Content-Type': 'application/x-www-form-urlencoded' } : {})
+      'Authorization': `Bearer ${process.env.PADDLE_API_KEY}`,
+      ...(body === undefined ? {} : { 'Content-Type': 'application/json' })
     },
-    body: params ? new URLSearchParams(params).toString() : undefined
+    body: body === undefined ? undefined : JSON.stringify(body)
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const error = new Error(payload.error?.message || `Stripe returned HTTP ${response.status}.`);
+    const error = new Error(payload.error?.detail || payload.error?.message || `Paddle returned HTTP ${response.status}.`);
     error.status = response.status;
     throw error;
   }
-  return payload;
+  return payload.data;
 }
 
-function stripePriceForPlan(plan) {
-  if (plan === 'unlimited') return process.env.STRIPE_PRICE_UNLIMITED;
-  if (plan === 'pictures') return process.env.STRIPE_PRICE_PICTURES;
+function paddlePriceForPlan(plan) {
+  if (plan === 'unlimited') return process.env.PADDLE_PRICE_UNLIMITED;
+  if (plan === 'pictures') return process.env.PADDLE_PRICE_PICTURES;
   return null;
 }
 
-function planForStripePrice(priceId) {
-  if (priceId && priceId === process.env.STRIPE_PRICE_UNLIMITED) return 'unlimited';
-  if (priceId && priceId === process.env.STRIPE_PRICE_PICTURES) return 'pictures';
+function planForPaddlePrice(priceId) {
+  if (priceId && priceId === process.env.PADDLE_PRICE_UNLIMITED) return 'unlimited';
+  if (priceId && priceId === process.env.PADDLE_PRICE_PICTURES) return 'pictures';
   return 'free';
 }
 
 async function subscriptionRow(userId) {
   const { data, error } = await supabaseAdmin()
     .from('jinsei_subscriptions')
-    .select('plan, status, stripe_customer_id, stripe_subscription_id, stripe_price_id, current_period_end, cancel_at_period_end')
+    .select('plan, status, paddle_customer_id, paddle_subscription_id, paddle_price_id, current_period_end, cancel_at_period_end')
     .eq('user_id', userId)
     .maybeSingle();
   if (error) throw error;
@@ -87,8 +87,8 @@ function effectiveEntitlement(row) {
     status: row?.status || 'inactive',
     currentPeriodEnd: row?.current_period_end || null,
     cancelAtPeriodEnd: Boolean(row?.cancel_at_period_end),
-    customerId: row?.stripe_customer_id || null,
-    subscriptionId: row?.stripe_subscription_id || null
+    customerId: row?.paddle_customer_id || null,
+    subscriptionId: row?.paddle_subscription_id || null
   };
 }
 
@@ -151,73 +151,72 @@ function setGuestUsageCookie(response, token) {
   });
 }
 
-function verifyStripeSignature(payload, signatureHeader) {
-  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+function verifyPaddleSignature(payload, signatureHeader) {
+  const secret = process.env.PADDLE_WEBHOOK_SECRET;
   if (!secret || !signatureHeader) return false;
-  const parts = signatureHeader.split(',');
-  const timestamp = parts.find(part => part.startsWith('t='))?.slice(2);
-  const signatures = parts.filter(part => part.startsWith('v1=')).map(part => part.slice(3));
+  const parts = signatureHeader.split(';').map(part => part.trim());
+  const timestamp = parts.find(part => part.startsWith('ts='))?.slice(3);
+  const signatures = parts.filter(part => part.startsWith('h1=')).map(part => part.slice(3));
   if (!timestamp || Math.abs(Date.now() / 1000 - Number(timestamp)) > 300) return false;
-  const expected = createHmac('sha256', secret).update(`${timestamp}.${payload}`).digest('hex');
+  const expected = createHmac('sha256', secret).update(`${timestamp}:${payload}`).digest('hex');
   return signatures.some(signature => {
     if (signature.length !== expected.length) return false;
     return timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
   });
 }
 
-async function syncStripeSubscription(subscription) {
+async function syncPaddleSubscription(subscription) {
   const client = supabaseAdmin();
-  let userId = Number(subscription.metadata?.jinsei_user_id);
+  let userId = Number(subscription.custom_data?.jinsei_user_id);
   if (!Number.isSafeInteger(userId)) {
     const { data, error } = await client.from('jinsei_subscriptions')
       .select('user_id')
-      .or(`stripe_subscription_id.eq.${subscription.id},stripe_customer_id.eq.${subscription.customer}`)
+      .or(`paddle_subscription_id.eq.${subscription.id},paddle_customer_id.eq.${subscription.customer_id}`)
       .maybeSingle();
     if (error) throw error;
     userId = data?.user_id;
   }
-  if (!userId) throw new Error(`No JINSEI user mapping for Stripe subscription ${subscription.id}.`);
-  const priceId = subscription.items?.data?.[0]?.price?.id || null;
-  const plan = subscription.status === 'canceled' ? 'free' : planForStripePrice(priceId);
-  const periodEnd = subscription.current_period_end || subscription.items?.data?.[0]?.current_period_end;
+  if (!userId) throw new Error(`No JINSEI user mapping for Paddle subscription ${subscription.id}.`);
+  const priceId = subscription.items?.[0]?.price?.id || null;
+  const plan = subscription.status === 'canceled' ? 'free' : planForPaddlePrice(priceId);
+  const periodEnd = subscription.current_billing_period?.ends_at || subscription.next_billed_at;
   const { error } = await client.from('jinsei_subscriptions').upsert({
     user_id: userId,
     plan,
     status: subscription.status,
-    stripe_customer_id: String(subscription.customer),
-    stripe_subscription_id: subscription.id,
-    stripe_price_id: priceId,
-    current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
-    cancel_at_period_end: Boolean(subscription.cancel_at_period_end),
+    paddle_customer_id: String(subscription.customer_id),
+    paddle_subscription_id: subscription.id,
+    paddle_price_id: priceId,
+    current_period_end: periodEnd || null,
+    cancel_at_period_end: Boolean(subscription.scheduled_change?.action === 'cancel'),
     updated_at: new Date().toISOString()
   }, { onConflict: 'user_id' });
   if (error) throw error;
 }
 
-async function handleStripeWebhook(request) {
+async function handlePaddleWebhook(request) {
   const payload = await request.text();
-  if (!verifyStripeSignature(payload, request.headers.get('stripe-signature'))) {
-    return json({ error: 'Invalid Stripe signature.' }, 400);
+  if (!verifyPaddleSignature(payload, request.headers.get('paddle-signature'))) {
+    return json({ error: 'Invalid Paddle signature.' }, 400);
   }
   const event = JSON.parse(payload);
   const client = supabaseAdmin();
-  const { data: seen, error: seenError } = await client.from('jinsei_stripe_events')
+  const { data: seen, error: seenError } = await client.from('jinsei_paddle_events')
     .select('event_id').eq('event_id', event.id).maybeSingle();
   if (seenError) throw seenError;
   if (seen) return json({ received: true, duplicate: true });
 
-  if (event.type === 'customer.subscription.created' ||
-      event.type === 'customer.subscription.updated' ||
-      event.type === 'customer.subscription.deleted') {
-    await syncStripeSubscription(event.data.object);
-  } else if (event.type === 'checkout.session.completed' && event.data.object.subscription) {
-    const subscription = await stripeRequest(`/subscriptions/${encodeURIComponent(event.data.object.subscription)}`);
-    await syncStripeSubscription(subscription);
+  if (event.event_type === 'subscription.created' ||
+      event.event_type === 'subscription.updated' ||
+      event.event_type === 'subscription.canceled' ||
+      event.event_type === 'subscription.paused' ||
+      event.event_type === 'subscription.resumed') {
+    await syncPaddleSubscription(event.data);
   }
 
-  const { error: eventError } = await client.from('jinsei_stripe_events').insert({
-    event_id: event.id,
-    event_type: event.type
+  const { error: eventError } = await client.from('jinsei_paddle_events').insert({
+    event_id: event.event_id,
+    event_type: event.event_type
   });
   if (eventError && eventError.code !== '23505') throw eventError;
   return json({ received: true });
@@ -432,7 +431,7 @@ export async function GET(request, context) {
       freeTurnLimit: FREE_TURN_LIMIT,
       currentPeriodEnd: entitlement.currentPeriodEnd,
       cancelAtPeriodEnd: entitlement.cancelAtPeriodEnd,
-      billingConfigured: Boolean(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_PRICE_UNLIMITED && process.env.STRIPE_PRICE_PICTURES),
+      billingConfigured: Boolean(process.env.PADDLE_API_KEY && process.env.PADDLE_PRICE_UNLIMITED && process.env.PADDLE_PRICE_PICTURES),
       canManageBilling: Boolean(entitlement.customerId)
     });
   }
@@ -472,7 +471,7 @@ export async function GET(request, context) {
 export async function POST(request, context) {
   const name = await endpoint(context);
 
-  if (name === 'stripe-webhook') return handleStripeWebhook(request);
+  if (name === 'paddle-webhook') return handlePaddleWebhook(request);
 
   if (name === 'logout') {
     const token = request.cookies.get(COOKIE_NAME)?.value;
@@ -527,7 +526,7 @@ export async function POST(request, context) {
     const auth = await requireUser(request);
     if (auth.response) return auth.response;
     const { plan } = await request.json().catch(() => ({}));
-    const price = stripePriceForPlan(plan);
+    const price = paddlePriceForPlan(plan);
     if (!price) return json({ error: 'That subscription plan is not configured.' }, 400);
     const existing = await subscriptionRow(auth.user.id);
     const entitlement = effectiveEntitlement(existing);
@@ -535,24 +534,16 @@ export async function POST(request, context) {
       return json({ error: 'Manage your existing subscription before changing plans.', code: 'SUBSCRIPTION_EXISTS' }, 409);
     }
     try {
-      const params = {
-        mode: 'subscription',
-        'line_items[0][price]': price,
-        'line_items[0][quantity]': '1',
-        client_reference_id: String(auth.user.id),
-        'metadata[jinsei_user_id]': String(auth.user.id),
-        'metadata[plan]': plan,
-        'subscription_data[metadata][jinsei_user_id]': String(auth.user.id),
-        'subscription_data[metadata][plan]': plan,
-        success_url: `${appOrigin(request)}/?billing=success`,
-        cancel_url: `${appOrigin(request)}/?billing=canceled`,
-        allow_promotion_codes: 'true'
-      };
-      if (existing?.stripe_customer_id) params.customer = existing.stripe_customer_id;
-      const session = await stripeRequest('/checkout/sessions', params);
-      return json({ url: session.url });
+      const transaction = await paddleRequest('/transactions', {
+        items: [{ price_id: price, quantity: 1 }],
+        collection_mode: 'automatic',
+        custom_data: { jinsei_user_id: auth.user.id, plan },
+        checkout: { url: appOrigin(request) }
+      });
+      if (!transaction.checkout?.url) throw new Error('Paddle did not return a checkout URL.');
+      return json({ url: transaction.checkout.url });
     } catch (error) {
-      console.error('Could not create Stripe Checkout session:', error);
+      console.error('Could not create Paddle checkout:', error);
       return json({ error: error.message || 'Could not start checkout.' }, error.status || 502);
     }
   }
@@ -561,15 +552,14 @@ export async function POST(request, context) {
     const auth = await requireUser(request);
     if (auth.response) return auth.response;
     const existing = await subscriptionRow(auth.user.id);
-    if (!existing?.stripe_customer_id) return json({ error: 'No billing account exists yet.' }, 404);
+    if (!existing?.paddle_customer_id) return json({ error: 'No billing account exists yet.' }, 404);
     try {
-      const session = await stripeRequest('/billing_portal/sessions', {
-        customer: existing.stripe_customer_id,
-        return_url: appOrigin(request)
+      const portal = await paddleRequest(`/customers/${encodeURIComponent(existing.paddle_customer_id)}/portal-sessions`, {
+        subscription_ids: existing.paddle_subscription_id ? [existing.paddle_subscription_id] : []
       });
-      return json({ url: session.url });
+      return json({ url: portal.urls?.general?.overview });
     } catch (error) {
-      console.error('Could not create Stripe billing portal session:', error);
+      console.error('Could not create Paddle customer portal session:', error);
       return json({ error: error.message || 'Could not open billing settings.' }, error.status || 502);
     }
   }

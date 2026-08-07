@@ -10,7 +10,7 @@ The application uses Next.js, DeepSeek V4 Flash through OpenRouter, and Supabase
 - npm
 - An OpenRouter API key
 - A Google Cloud Text-to-Speech API key (for optional WaveNet NPC speech)
-- A Stripe account and two recurring monthly Prices (for paid plans)
+- A Paddle account and two recurring monthly Prices (for merchant-of-record paid plans)
 - A Replicate API token (for the Pictures plan)
 - A Supabase project and server-side secret key
 
@@ -28,10 +28,10 @@ Add your OpenRouter API key to `.env`:
 ```dotenv
 OPENROUTER_API_KEY=sk-or-v1-your-key-here
 GOOGLE_TTS_API_KEY=your-google-cloud-api-key
-STRIPE_SECRET_KEY=sk_test_your-secret-key
-STRIPE_WEBHOOK_SECRET=whsec_your-webhook-secret
-STRIPE_PRICE_UNLIMITED=price_your_499_monthly_price
-STRIPE_PRICE_PICTURES=price_your_999_monthly_price
+PADDLE_API_KEY=pdl_sdbx_your-api-key
+PADDLE_WEBHOOK_SECRET=pdl_ntfset_your-webhook-secret
+PADDLE_PRICE_UNLIMITED=pri_your_499_monthly_price
+PADDLE_PRICE_PICTURES=pri_your_999_monthly_price
 REPLICATE_API_TOKEN=r8_your-replicate-token
 SUPABASE_URL=https://jotioxgrharwfndnxoir.supabase.co
 SUPABASE_SECRET_KEY=sb_secret_your-secret-key-here
@@ -52,18 +52,18 @@ Open [http://localhost:3000](http://localhost:3000).
 | `OPENROUTER_API_KEY` | Yes | — | Server-side key used for generated game turns. |
 | `OPENROUTER_MODEL` | No | `deepseek/deepseek-v4-flash` | OpenRouter model used by the turn endpoint. |
 | `GOOGLE_TTS_API_KEY` | Yes for speech | — | Server-side Google Cloud key with the Text-to-Speech API enabled. |
-| `STRIPE_SECRET_KEY` | Yes for billing | — | Stripe secret key used to create Checkout and portal sessions. |
-| `STRIPE_WEBHOOK_SECRET` | Yes for billing | — | Signature secret for `/api/stripe-webhook`. |
-| `STRIPE_PRICE_UNLIMITED` | Yes for billing | — | Stripe monthly recurring $4.99 Price ID. |
-| `STRIPE_PRICE_PICTURES` | Yes for billing | — | Stripe monthly recurring $9.99 Price ID. |
-| `APP_URL` | Yes in production | — | Canonical public URL used for Stripe return links. |
+| `PADDLE_API_KEY` | Yes for billing | — | Server-side Paddle API key with transaction and customer-portal permissions. |
+| `PADDLE_WEBHOOK_SECRET` | Yes for billing | — | Signature secret for `/api/paddle-webhook`. |
+| `PADDLE_PRICE_UNLIMITED` | Yes for billing | — | Paddle monthly recurring $4.99 Price ID. |
+| `PADDLE_PRICE_PICTURES` | Yes for billing | — | Paddle monthly recurring $9.99 Price ID. |
+| `APP_URL` | Yes in production | — | Approved Paddle checkout domain. |
 | `REPLICATE_API_TOKEN` | Yes for Pictures | — | Server-side token used only after Pictures-plan authorization. |
 | `SUPABASE_URL` | Yes | — | Supabase project API URL. |
 | `SUPABASE_SECRET_KEY` | Yes | — | Server-only secret key used for database operations. |
 | `PORT` | No | `3000` | Port used by the production server. |
 | `COOKIE_SECURE` | No | `false` | Set to `true` when the site is served over HTTPS. |
 
-Never expose `OPENROUTER_API_KEY`, `GOOGLE_TTS_API_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `REPLICATE_API_TOKEN`, or `SUPABASE_SECRET_KEY` to browser code or commit `.env`. Do not prefix any secret with `NEXT_PUBLIC_`.
+Never expose `OPENROUTER_API_KEY`, `GOOGLE_TTS_API_KEY`, `PADDLE_API_KEY`, `PADDLE_WEBHOOK_SECRET`, `REPLICATE_API_TOKEN`, or `SUPABASE_SECRET_KEY` to browser code or commit `.env`. Do not prefix any secret with `NEXT_PUBLIC_`.
 
 ## Free and paid plans
 
@@ -123,16 +123,16 @@ scripts/
 | `POST` | `/api/turn` | Stream one generated game turn from DeepSeek V4 Flash through OpenRouter. |
 | `POST` | `/api/speech` | Speak one NPC line with Google WaveNet; cached before reuse. |
 | `GET` | `/api/plan` | Return the current entitlement and free-turn balance. |
-| `POST` | `/api/checkout` | Create a Stripe Checkout session for a paid plan. |
-| `POST` | `/api/portal` | Open Stripe's customer billing portal. |
-| `POST` | `/api/stripe-webhook` | Verify Stripe events and update entitlements. |
+| `POST` | `/api/checkout` | Create a Paddle hosted checkout for a paid plan. |
+| `POST` | `/api/portal` | Open Paddle's customer portal. |
+| `POST` | `/api/paddle-webhook` | Verify Paddle events and update entitlements. |
 | `POST` | `/api/image` | Generate the paid plan's verified-turn scene image. |
 | `GET` | `/api/generated-image?id=…` | Serve an authorized saved private scene image. |
 | `GET` | `/health` | Report server, key, and image status. |
 
 The browser sends conversation content to `/api/turn`, but the server controls the OpenRouter key, model, and output-token limit. OpenRouter's OpenAI-compatible streaming events are forwarded to the browser as server-sent events.
 
-Subscription entitlements are updated only from verified Stripe webhooks. The image route checks the entitlement, ownership of the saved life, and one-image-per-turn rule before calling Replicate.
+Subscription entitlements are updated only from verified Paddle webhooks. The image route checks the entitlement, ownership of the saved life, and one-image-per-turn rule before calling Replicate.
 
 ## Data and authentication
 
@@ -142,9 +142,9 @@ Persistent data is stored in the Supabase project `jinsei` in the Seoul region. 
 - `jinsei_sessions`: random session tokens with 30-day expirations
 - `jinsei_lives`: multiple JSONB save records per account
 - `jinsei_speech_cache`: opaque WaveNet cache keys and private storage paths
-- `jinsei_subscriptions`: Stripe customer, subscription, plan, and current entitlement state
+- `jinsei_subscriptions`: Paddle customer, subscription, plan, and current entitlement state
 - `jinsei_turn_usage`: server-side free-turn counters
-- `jinsei_stripe_events`: idempotent Stripe webhook event records
+- `jinsei_paddle_events`: idempotent Paddle webhook event records
 - `jinsei_image_generations`: one private generated picture per subscriber life/turn
 
 Authentication uses an HTTP-only, same-site cookie named `jinsei_session`. Set `COOKIE_SECURE=true` in HTTPS deployments. Database access occurs only in Next.js route handlers through `SUPABASE_SECRET_KEY`; the browser has no direct table access. All application tables have RLS enabled, and access for Supabase's `anon` and `authenticated` database roles is revoked.
@@ -179,10 +179,10 @@ For production deployments:
 
 - Provide `OPENROUTER_API_KEY` through the platform's secret manager.
 - Enable Google Cloud Text-to-Speech, restrict a `GOOGLE_TTS_API_KEY` to that API, and add it through the platform's secret manager.
-- In Stripe, create monthly recurring USD Prices for $4.99 and $9.99. Put their IDs in `STRIPE_PRICE_UNLIMITED` and `STRIPE_PRICE_PICTURES`.
-- Configure a Stripe webhook at `https://your-domain/api/stripe-webhook` for `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, and `customer.subscription.deleted`; copy its signing secret to `STRIPE_WEBHOOK_SECRET`.
-- Configure the Stripe Customer Portal to allow cancellation and plan changes. A subscriber changing plans is sent there rather than creating a duplicate subscription.
-- Provide `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `REPLICATE_API_TOKEN`, and `APP_URL` through the platform's secret manager.
+- In Paddle, create monthly recurring USD Prices for $4.99 and $9.99. Put their IDs in `PADDLE_PRICE_UNLIMITED` and `PADDLE_PRICE_PICTURES`.
+- Add `https://your-domain` as an approved checkout domain. Configure a Paddle notification destination at `https://your-domain/api/paddle-webhook` for `subscription.created`, `subscription.updated`, `subscription.canceled`, `subscription.paused`, and `subscription.resumed`; copy its signing secret to `PADDLE_WEBHOOK_SECRET`.
+- Paddle's hosted customer portal handles cancellation, payment methods, invoices, and subscription changes. A subscriber changing plans is sent there rather than creating a duplicate subscription.
+- Provide `PADDLE_API_KEY`, `PADDLE_WEBHOOK_SECRET`, `REPLICATE_API_TOKEN`, and `APP_URL` through the platform's secret manager.
 - Set `COOKIE_SECURE=true` when using HTTPS.
 - Configure `SUPABASE_URL` and `SUPABASE_SECRET_KEY` as server-side deployment secrets.
 - Avoid buffering `/api/turn` in a reverse proxy, because buffering prevents text from appearing incrementally.

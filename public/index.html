@@ -263,10 +263,6 @@ header{
 .npc .romaji{font-family:var(--mono);font-size:12px;color:var(--ink-soft);margin-top:4px}
 .npc .en{font-size:13px;color:var(--ink-soft);margin-top:6px;display:none;border-top:1px dashed var(--line);padding-top:6px}
 .npc.revealed .en{display:block}
-.npc-tools{display:flex;gap:8px;align-items:center;margin-top:9px}
-.tts-play{appearance:none;border:1px solid var(--line);background:transparent;color:var(--ink-soft);border-radius:99px;padding:5px 9px;font-family:var(--mono);font-size:11px;line-height:1;cursor:pointer;transition:border-color .16s,color .16s,background .16s}
-.tts-play:hover:not(:disabled){border-color:var(--ai);color:var(--ai);background:color-mix(in srgb,var(--ai) 6%,transparent)}
-.tts-play:disabled{cursor:wait;opacity:.6}
 .reveal-btn{
   margin-top:8px;background:none;border:1px solid var(--line);font-family:var(--mono);
   font-size:11px;padding:3px 10px;color:var(--ink-soft);letter-spacing:.08em;
@@ -1103,34 +1099,6 @@ async function speak(){
   await turn(t, null);
 }
 
-let activeSpeech=null;
-async function playNpcSpeech(text, country, button){
-  if(!text || button.disabled) return;
-  button.disabled=true;
-  const original=button.textContent;
-  button.textContent='…';
-  try{
-    if(activeSpeech){ activeSpeech.pause(); activeSpeech=null; }
-    const r=await fetch('/api/speech',{
-      method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin',
-      body:JSON.stringify({text,country})
-    });
-    if(!r.ok) throw new Error('speech unavailable');
-    const url=URL.createObjectURL(await r.blob());
-    const audio=new Audio(url);
-    activeSpeech=audio;
-    audio.onended=audio.onerror=()=>{ URL.revokeObjectURL(url); if(activeSpeech===audio) activeSpeech=null; };
-    await audio.play();
-  }catch(e){
-    console.warn('Could not play speech:',e);
-    button.textContent=locale().speechError;
-    setTimeout(()=>{ if(!button.disabled) button.textContent=original; },1600);
-  }finally{
-    button.disabled=false;
-    if(button.textContent==='…') button.textContent=original;
-  }
-}
-
 async function turn(playerText, directive){
   S.busy = true; $('send').disabled = true;
   const think = document.createElement('div');
@@ -1176,13 +1144,9 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
     npcJp=document.createElement('div'); npcJp.className='jp live';
     npcRomaji=document.createElement('div'); npcRomaji.className='romaji';
     npcEn=document.createElement('div'); npcEn.className='en';
-    const tools=document.createElement('div'); tools.className='npc-tools';
-    const play=document.createElement('button'); play.className='tts-play'; play.type='button'; play.textContent=locale().listen; play.setAttribute('aria-label','Hear this line');
-    play.onclick=()=>playNpcSpeech(npcJp.textContent, S.country, play);
     const rb=document.createElement('button'); rb.className='reveal-btn'; rb.textContent='訳を見る';
     rb.onclick=()=>{npcDiv.classList.add('revealed'); rb.remove();};
-    tools.appendChild(play); tools.appendChild(rb);
-    npcDiv.appendChild(npcWho); npcDiv.appendChild(npcJp); npcDiv.appendChild(npcRomaji); npcDiv.appendChild(npcEn); npcDiv.appendChild(tools);
+    npcDiv.appendChild(npcWho); npcDiv.appendChild(npcJp); npcDiv.appendChild(npcRomaji); npcDiv.appendChild(npcEn); npcDiv.appendChild(rb);
     entry.appendChild(npcDiv);
   }
   function updateLive(){
