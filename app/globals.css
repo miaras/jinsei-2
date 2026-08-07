@@ -3,5 +3,15 @@ body {
   margin: 0;
 }
 
+.legal-page { min-height: 100vh; box-sizing: border-box; padding: 48px 24px 72px; background: #f4f0e7; color: #19231f; font-family: "Zen Kaku Gothic New", system-ui, sans-serif; }
+.legal-content { max-width: 760px; margin: 0 auto; }
+.legal-brand { color: #2e5077; font-family: "IBM Plex Mono", monospace; font-size: 12px; letter-spacing: .14em; text-decoration: none; }
+.legal-page h1 { margin: 30px 0 6px; font-family: "Shippori Mincho", serif; font-size: clamp(34px, 7vw, 52px); }
+.legal-page h2 { margin: 32px 0 8px; font-family: "Shippori Mincho", serif; font-size: 23px; }
+.legal-page p, .legal-page li { font-size: 15px; line-height: 1.8; }
+.legal-page a { color: #2e5077; }
+.legal-date { color: #58635c; font-family: "IBM Plex Mono", monospace; font-size: 12px !important; }
+.legal-nav { display: flex; flex-wrap: wrap; gap: 12px 18px; margin-top: 40px; font-size: 14px; }
+
 /* The game stylesheet is embedded by app/page.js while the UI is migrated
    from its original single-file implementation. */

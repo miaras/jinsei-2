@@ -178,6 +178,8 @@ input{font-family:inherit}
   white-space:nowrap;
 }
 .sb-logout:hover{border-color:var(--paper);color:var(--paper)}
+.sb-home{background:none;border:1px solid rgba(243,238,225,.3);color:rgba(243,238,225,.8);padding:4px 8px;margin-left:8px;font-family:var(--mono);font-size:10px;white-space:nowrap}
+.sb-home:hover{border-color:var(--paper);color:var(--paper)}
 .sb-plan{
   background:var(--shu);border:1px solid var(--shu);color:#fff;
   font-family:var(--mono);font-size:10px;letter-spacing:.05em;padding:4px 9px;margin-left:auto;
@@ -201,6 +203,9 @@ input{font-family:inherit}
 .plan-action:disabled{opacity:.5;cursor:wait}
 #manage-billing{display:none;margin:10px auto 0;background:none;border:none;text-decoration:underline;color:var(--ink-soft);font-size:12px}
 .plans-foot{font-size:11px;line-height:1.5;color:var(--ink-soft);text-align:center}
+.legal-links{display:flex;justify-content:center;flex-wrap:wrap;gap:7px 14px;margin-top:14px;font-family:var(--mono);font-size:10px}
+.legal-links a{color:var(--ink-soft);text-decoration:underline;text-underline-offset:3px}
+.legal-links a:hover{color:var(--ai)}
 @media(max-width:620px){.plans-grid{grid-template-columns:1fr}.plan-card{min-height:0}}
 
 /* ============ SIGN-UP NUDGE (guest, turn 10) ============ */
@@ -452,7 +457,8 @@ aside{
   <span class="sb-item"><span class="sb-label" id="label-funds">Funds</span><span class="sb-val yen" id="sb-yen">—</span></span>
   <span class="sb-save" id="sb-save"></span>
   <button class="sb-plan" id="sb-plan" type="button">FREE · 20</button>
-  <button class="sb-logout" id="sb-logout" title="Log out">ログアウト</button>
+  <button class="sb-home" id="sb-home" type="button">Back to main page</button>
+  <button class="sb-logout" id="sb-logout" title="Log out">Log out</button>
 </div>
 
 <!-- ================= AUTH (modal overlay — usable pre-game or mid-game) ================= -->
@@ -499,6 +505,7 @@ aside{
     </div>
     <button id="manage-billing" type="button">Manage or cancel subscription</button>
     <p class="plans-foot" id="plans-foot">Recurring monthly. Cancel any time. Pictures are limited to one generation per game turn.</p>
+    <nav class="legal-links" aria-label="Legal"><a href="/terms">Terms of Service</a><a href="/privacy">Privacy Notice</a><a href="/refunds">Refund Policy</a></nav>
   </div>
 </section>
 
@@ -641,11 +648,12 @@ const DESTINATIONS = {
   china:{country:'China',language:'Mandarin Chinese',script:'中文',romanization:'pinyin',arrival:'Shanghai Pudong Airport',cash:8000,currency:'¥',currencyName:'yuan',visa:'Temporary Visitor',lede:'You land in Shanghai with a suitcase, ¥8,000, and whatever Mandarin you carry in your head.'},
   korea:{country:'Korea',language:'Korean',script:'한국어',romanization:'romanization',arrival:'Incheon International Airport',cash:800000,currency:'₩',currencyName:'won',visa:'Temporary Visitor (90 days)',lede:'You land at Incheon with a suitcase, ₩800,000, and whatever Korean you carry in your head.'}
 };
+const SAVE_CARD_COLORS = { japan:'#2E5077', china:'#A92E27', korea:'#2F684D' };
 const destination=()=>DESTINATIONS[S.country]||DESTINATIONS.japan;
 const LOCALES={
-  japan:{brand:'人生',destination:'Your destination / 行き先',play:'プレイ · Play',note:'日本語かローマ字で話してください。あなたの物語は、あなたの言葉で生まれます。',speak:'話す',listen:'🔊 聞く',speechError:'音声エラー',card:'在留カード',back:'← 物語へ',country:'RESIDENCE CARD · 日本国',government:'日本国政府',people:'People · 人間関係',vocab:"Words you've earned · 語彙帳",labels:['日','時','腹','体','資金'],cardLabels:['名前','在留資格','日','場所','空腹','健康','仕事','資金'],hint:'ENTERで話す · *アスタリスク*で行動 · ヒントは¥500',times:{morning:'朝',afternoon:'昼',evening:'夕方',night:'夜'},none:'無職 · none'},
-  china:{brand:'人生',destination:'选择目的地',play:'开始游戏',note:'请用中文或拼音说话。你的故事会随着你的话语展开。',speak:'说话',listen:'🔊 聆听',speechError:'语音错误',card:'居留卡',back:'← 返回故事',country:'RESIDENCE CARD · 中国',government:'中华人民共和国',people:'人物关系',vocab:'已学词汇',labels:['天数','时间','饥饿','健康','资金'],cardLabels:['姓名','身份','天数','地点','饥饿','健康','工作','资金'],hint:'按 ENTER 说话 · 用 *星号* 表示动作 · 提示费用 ¥500',times:{morning:'早晨',afternoon:'下午',evening:'傍晚',night:'夜晚'},none:'无业'},
-  korea:{brand:'인생',destination:'어디에서 시작할까요?',play:'시작하기',note:'한국어나 로마자로 말해 보세요. 당신의 이야기는 당신의 말로 시작됩니다.',speak:'말하기',listen:'🔊 듣기',speechError:'음성 오류',card:'외국인등록증',back:'← 이야기로',country:'RESIDENCE CARD · 대한민국',government:'대한민국 정부',people:'인간관계',vocab:'배운 단어',labels:['날짜','시간','허기','건강','자금'],cardLabels:['이름','체류 자격','날짜','장소','허기','건강','직업','자금'],hint:'ENTER로 말하기 · *별표*로 행동 · 힌트 비용 ₩500',times:{morning:'아침',afternoon:'오후',evening:'저녁',night:'밤'},none:'무직'}
+  japan:{brand:'人生',destination:'Your destination / 行き先',play:'プレイ · Play',note:'日本語かローマ字で話してください。あなたの物語は、あなたの言葉で生まれます。',speak:'話す',listen:'🔊 聞く',speechError:'音声エラー',card:'在留カード',back:'← 物語へ',country:'RESIDENCE CARD · 日本国',government:'日本国政府',people:'People · 人間関係',vocab:"Words you've earned · 語彙帳",labels:['日','時','腹','体','資金'],cardLabels:['名前','在留資格','日','場所','空腹','健康','仕事','資金'],hint:'ENTER to speak · *asterisks* for actions · Hint ¥500',times:{morning:'朝',afternoon:'昼',evening:'夕方',night:'夜'},none:'無職 · none'},
+  china:{brand:'人生',destination:'选择目的地',play:'开始游戏',note:'请用中文或拼音说话。你的故事会随着你的话语展开。',speak:'说话',listen:'🔊 聆听',speechError:'语音错误',card:'居留卡',back:'← 返回故事',country:'RESIDENCE CARD · 中国',government:'中华人民共和国',people:'人物关系',vocab:'已学词汇',labels:['天数','时间','饥饿','健康','资金'],cardLabels:['姓名','身份','天数','地点','饥饿','健康','工作','资金'],hint:'ENTER to speak · *asterisks* for actions · Hint ¥500',times:{morning:'早晨',afternoon:'下午',evening:'傍晚',night:'夜晚'},none:'无业'},
+  korea:{brand:'인생',destination:'어디에서 시작할까요?',play:'시작하기',note:'한국어나 로마자로 말해 보세요. 당신의 이야기는 당신의 말로 시작됩니다.',speak:'말하기',listen:'🔊 듣기',speechError:'음성 오류',card:'외국인등록증',back:'← 이야기로',country:'RESIDENCE CARD · 대한민국',government:'대한민국 정부',people:'인간관계',vocab:'배운 단어',labels:['날짜','시간','허기','건강','자금'],cardLabels:['이름','체류 자격','날짜','장소','허기','건강','직업','자금'],hint:'ENTER to speak · *asterisks* for actions · Hint ¥500',times:{morning:'아침',afternoon:'오후',evening:'저녁',night:'밤'},none:'무직'}
 };
 const locale=()=>LOCALES[S.country]||LOCALES.japan;
 const languageDescription=()=>({
@@ -789,6 +797,7 @@ $('vocab-back').onclick=closeVocabReview;
 $('begin-btn').onclick=start;
 $('send').onclick=()=>speak();
 $('say').addEventListener('keydown',e=>{if(e.key==='Enter')speak();});
+$('sb-home').onclick=()=>{ window.location.assign('/'); };
 
 /* ================= AUTH (optional — modal usable pre-game or mid-game) ================= */
 let CURRENT_USER=null;
@@ -799,12 +808,10 @@ let pendingCheckoutPlan=null;
 const GUEST_LIVES_KEY='jinsei_guest_lives_v2';
 const LEGACY_GUEST_SAVE_KEY='jinsei_guest_save_v1';
 const BILLING_COPY={
-  japan:{kicker:'Choose your journey',title:'Keep your life going',free:n=>`The free version includes 20 turns. ${n} remaining.`,unlimited:'Unlimited',pictures:'Unlimited + Pictures',period:'/ month',uCopy:'Unlimited story turns, saved lives, and WaveNet speech.',pCopy:'Everything in Unlimited, with a generated scene picture for every game turn.',chooseU:'Choose Unlimited',chooseP:'Choose Pictures',current:'Current plan',manage:'Manage or cancel subscription',foot:'Recurring monthly. Cancel any time. Pictures are limited to one generation per game turn.'},
-  china:{kicker:'选择旅程',title:'继续你的人生',free:n=>`免费版包含 20 回合，还剩 ${n} 回合。`,unlimited:'无限畅玩',pictures:'无限畅玩 + 图片',period:'/ 月',uCopy:'无限故事回合、存档和 WaveNet 语音。',pCopy:'包含无限畅玩的全部功能，并为每个游戏回合生成场景图片。',chooseU:'选择无限畅玩',chooseP:'选择图片方案',current:'当前方案',manage:'管理或取消订阅',foot:'每月自动续订，可随时取消。每个游戏回合最多生成一张图片。'},
-  korea:{kicker:'여정을 선택하세요',title:'당신의 인생을 계속하세요',free:n=>`무료 버전은 20턴이며, ${n}턴 남았습니다.`,unlimited:'무제한',pictures:'무제한 + 그림',period:'/ 월',uCopy:'스토리 턴, 저장된 인생, WaveNet 음성을 무제한으로 이용합니다.',pCopy:'무제한의 모든 기능과 매 게임 턴마다 생성되는 장면 그림을 포함합니다.',chooseU:'무제한 선택',chooseP:'그림 플랜 선택',current:'현재 플랜',manage:'구독 관리 또는 취소',foot:'매월 자동 결제되며 언제든 취소할 수 있습니다. 그림은 게임 턴당 한 장으로 제한됩니다.'}
+  kicker:'Choose your journey',title:'Keep your life going',free:n=>`The free version includes 20 turns. ${n} remaining.`,unlimited:'Unlimited',pictures:'Unlimited + Pictures',period:'/ month',uCopy:'Unlimited story turns, saved lives, and WaveNet speech.',pCopy:'Everything in Unlimited, with a generated scene picture for every game turn.',chooseU:'Choose Unlimited',chooseP:'Choose Pictures',current:'Current plan',manage:'Manage or cancel subscription',foot:'Recurring monthly. Cancel any time. Pictures are limited to one generation per game turn.'
 };
 
-function billingCopy(){ return BILLING_COPY[S.country]||BILLING_COPY.japan; }
+function billingCopy(){ return BILLING_COPY; }
 function renderPlanUI(){
   const c=billingCopy();
   $('plans-kicker').textContent=c.kicker; $('plans-title').textContent=c.title;
@@ -949,7 +956,7 @@ async function doLogout(){
 function updateIdentityUI(){
   if(CURRENT_USER){
     $('identity-line').innerHTML = `signed in as ${esc(CURRENT_USER)} · <a href="#" id="identity-action">log out</a>`;
-    $('sb-logout').textContent='ログアウト';
+    $('sb-logout').textContent='Log out';
     $('sb-logout').onclick=doLogout;
   } else {
     $('identity-line').innerHTML = `Playing as guest · <a href="#" id="identity-action">sign in / sign up</a>`;
@@ -1026,8 +1033,9 @@ async function checkForSave(){
   $('lives-list').innerHTML='';
   lives.forEach(life=>{
     const save=life.data, d=DESTINATIONS[save.country||'japan']||destination();
+    const country=save.country||'japan';
     const row=document.createElement('div'); row.style.cssText='display:flex;gap:7px';
-    const resume=document.createElement('button'); resume.style.cssText='flex:1;background:var(--ai);color:var(--paper);border:none;padding:9px;text-align:left;font-family:var(--disp)';
+    const resume=document.createElement('button'); resume.style.cssText=`flex:1;background:${SAVE_CARD_COLORS[country]||SAVE_CARD_COLORS.japan};color:var(--paper);border:none;padding:9px;text-align:left;font-family:var(--disp)`;
     resume.textContent=`${save.name} · Day ${save.state.day} · ${save.state.location||'?'} · ${d.currency}${Number(save.state.yen).toLocaleString()}`;
     resume.onclick=()=>resumeGame(save,life.id);
     const remove=document.createElement('button'); remove.textContent='×'; remove.title='Delete life'; remove.style.cssText='width:34px;background:none;border:1px solid var(--line);color:var(--shu);font-size:18px';
@@ -1433,12 +1441,12 @@ function finalizeTurn(sections, hadPlayerTurn){
     .filter(s=>s && s.toUpperCase()!=='NONE').slice(0,3);
   sugg.forEach(s=>{
     const c=document.createElement('button'); c.className='chip locked';
-    c.innerHTML=`<span class="price">¥${HINT_COST}</span> ヒントを買う`;
+    c.innerHTML=`<span class="price">¥${HINT_COST}</span> Hint`;
     c.onclick=()=>{
       if(c.classList.contains('locked')){
         if(S.state.yen < HINT_COST){
           c.classList.add('broke'); c.innerHTML='<span class="price">金欠</span> not enough yen';
-          setTimeout(()=>{c.classList.remove('broke'); c.innerHTML=`<span class="price">¥${HINT_COST}</span> ヒントを買う`;},1400);
+          setTimeout(()=>{c.classList.remove('broke'); c.innerHTML=`<span class="price">¥${HINT_COST}</span> Hint`;},1400);
           return;
         }
         S.state.yen -= HINT_COST; S.hintSpend += HINT_COST;
