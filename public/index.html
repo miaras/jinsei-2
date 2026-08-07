@@ -399,11 +399,11 @@ aside{
 <!-- ================= FIXED STATUS BAR ================= -->
 <div id="statusbar" class="hide">
   <span class="sb-brand">人生<span class="sb-hc-badge hide" id="sb-hc-badge">鬼畜</span></span>
-  <span class="sb-item"><span class="sb-label">Day</span><span class="sb-val" id="sb-day">—</span></span>
-  <span class="sb-item"><span class="sb-label">Time</span><span class="sb-val" id="sb-time">—</span></span>
-  <span class="sb-item"><span class="sb-label">腹 Hunger</span><span class="sb-val" id="sb-hunger">—</span></span>
-  <span class="sb-item"><span class="sb-label">体 Health</span><span class="sb-val" id="sb-health">—</span></span>
-  <span class="sb-item"><span class="sb-label">Funds</span><span class="sb-val yen" id="sb-yen">—</span></span>
+  <span class="sb-item"><span class="sb-label" id="label-day">Day</span><span class="sb-val" id="sb-day">—</span></span>
+  <span class="sb-item"><span class="sb-label" id="label-time">Time</span><span class="sb-val" id="sb-time">—</span></span>
+  <span class="sb-item"><span class="sb-label" id="label-hunger">腹 Hunger</span><span class="sb-val" id="sb-hunger">—</span></span>
+  <span class="sb-item"><span class="sb-label" id="label-health">体 Health</span><span class="sb-val" id="sb-health">—</span></span>
+  <span class="sb-item"><span class="sb-label" id="label-funds">Funds</span><span class="sb-val yen" id="sb-yen">—</span></span>
   <span class="sb-save" id="sb-save"></span>
   <button class="sb-logout" id="sb-logout" title="Log out">ログアウト</button>
 </div>
@@ -447,7 +447,7 @@ aside{
     </div>
     <label class="field-label" for="name-input">Your name / 名前</label>
     <input id="name-input" placeholder="e.g. Miara" maxlength="24" autocomplete="off">
-    <span class="field-label">Your destination / 行き先</span>
+    <span class="field-label" id="destination-label">Your destination / 行き先</span>
     <div class="levels" id="destinations">
       <button class="level-btn destination-btn sel" data-country="japan"><span class="jp">日本</span><span class="en">Japan · Japanese</span></button>
       <button class="level-btn destination-btn" data-country="china"><span class="jp">中国</span><span class="en">China · Mandarin</span></button>
@@ -468,7 +468,7 @@ aside{
     </div>
     -->
     <button id="begin-btn">プレイ · Play</button>
-    <p class="setup-note">Type in Japanese or rōmaji. Your story is generated as you live it.</p>
+    <p class="setup-note" id="setup-note">Type in Japanese or rōmaji. Your story is generated as you live it.</p>
     <p class="setup-note" id="identity-line"></p>
   </div>
 </section>
@@ -494,36 +494,36 @@ aside{
         <input id="say" placeholder="日本語で話してください… (rōmaji OK)" autocomplete="off">
         <button id="send">話す</button>
       </div>
-      <div class="dock-hint">ENTER to speak · *asterisks* for actions · hints cost ¥500 each — the phrasebook isn't free</div>
+      <div class="dock-hint" id="dock-hint">ENTER to speak · *asterisks* for actions · hints cost ¥500 each — the phrasebook isn't free</div>
     </div>
   </main>
 
   <aside id="sidebar">
     <div id="sidebar-default">
     <div class="card">
-      <div class="card-head"><span class="t">在留カード</span><span class="g">RESIDENCE CARD · 日本国</span></div>
+      <div class="card-head"><span class="t" id="card-title">在留カード</span><span class="g" id="card-country">RESIDENCE CARD · 日本国</span></div>
       <div class="card-body">
-        <div class="vert">日本国政府</div>
-        <div class="crow"><span class="k">Name</span><span class="v" id="c-name">—</span></div>
-        <div class="crow"><span class="k">Status</span><span class="v" id="c-visa">—</span></div>
-        <div class="crow"><span class="k">Day</span><span class="v" id="c-day">—</span></div>
-        <div class="crow"><span class="k">Location</span><span class="v" id="c-loc">—</span></div>
-        <div class="crow"><span class="k">Hunger</span><span class="v" id="c-hunger">—</span></div>
-        <div class="crow"><span class="k">Health</span><span class="v" id="c-health">—</span></div>
-        <div class="crow"><span class="k">Work</span><span class="v" id="c-job">—</span></div>
-        <div class="crow"><span class="k">Funds</span><span class="v yen" id="c-yen">—</span></div>
+        <div class="vert" id="card-government">日本国政府</div>
+        <div class="crow"><span class="k" id="card-name-label">Name</span><span class="v" id="c-name">—</span></div>
+        <div class="crow"><span class="k" id="card-status-label">Status</span><span class="v" id="c-visa">—</span></div>
+        <div class="crow"><span class="k" id="card-day-label">Day</span><span class="v" id="c-day">—</span></div>
+        <div class="crow"><span class="k" id="card-location-label">Location</span><span class="v" id="c-loc">—</span></div>
+        <div class="crow"><span class="k" id="card-hunger-label">Hunger</span><span class="v" id="c-hunger">—</span></div>
+        <div class="crow"><span class="k" id="card-health-label">Health</span><span class="v" id="c-health">—</span></div>
+        <div class="crow"><span class="k" id="card-work-label">Work</span><span class="v" id="c-job">—</span></div>
+        <div class="crow"><span class="k" id="card-funds-label">Funds</span><span class="v yen" id="c-yen">—</span></div>
       </div>
       <div id="stamps"><span class="stamps-label">Milestones · 記録</span></div>
     </div>
 
     <div id="side-scroll">
       <div class="panel">
-        <h3>People · 人間関係</h3>
+        <h3 id="people-title">People · 人間関係</h3>
         <div id="people"><span class="empty-note">No one yet. Say hello to someone.</span></div>
       </div>
 
       <div class="panel vocab-panel" id="vocab-panel" role="button" tabindex="0" aria-label="Review words you've earned">
-        <h3>Words you've earned · 語彙帳</h3>
+        <h3 id="vocab-title">Words you've earned · 語彙帳</h3>
         <div id="vocab-list"><span class="empty-note">Words appear here as you meet them.</span></div>
       </div>
     </div>
@@ -571,6 +571,12 @@ const DESTINATIONS = {
   korea:{country:'Korea',language:'Korean',script:'한국어',romanization:'romanization',arrival:'Incheon International Airport',cash:800000,currency:'₩',currencyName:'won',visa:'Temporary Visitor (90 days)',lede:'You land at Incheon with a suitcase, ₩800,000, and whatever Korean you carry in your head.'}
 };
 const destination=()=>DESTINATIONS[S.country]||DESTINATIONS.japan;
+const LOCALES={
+  japan:{brand:'人生',destination:'Your destination / 行き先',play:'プレイ · Play',note:'日本語かローマ字で話してください。あなたの物語は、あなたの言葉で生まれます。',speak:'話す',card:'在留カード',back:'← 物語へ',country:'RESIDENCE CARD · 日本国',government:'日本国政府',people:'People · 人間関係',vocab:"Words you've earned · 語彙帳",labels:['日','時','腹','体','資金'],cardLabels:['名前','在留資格','日','場所','空腹','健康','仕事','資金'],hint:'ENTERで話す · *アスタリスク*で行動 · ヒントは¥500',times:{morning:'朝',afternoon:'昼',evening:'夕方',night:'夜'},none:'無職 · none'},
+  china:{brand:'人生',destination:'选择目的地',play:'开始游戏',note:'请用中文或拼音说话。你的故事会随着你的话语展开。',speak:'说话',card:'居留卡',back:'← 返回故事',country:'RESIDENCE CARD · 中国',government:'中华人民共和国',people:'人物关系',vocab:'已学词汇',labels:['天数','时间','饥饿','健康','资金'],cardLabels:['姓名','身份','天数','地点','饥饿','健康','工作','资金'],hint:'按 ENTER 说话 · 用 *星号* 表示动作 · 提示费用 ¥500',times:{morning:'早晨',afternoon:'下午',evening:'傍晚',night:'夜晚'},none:'无业'},
+  korea:{brand:'인생',destination:'어디에서 시작할까요?',play:'시작하기',note:'한국어나 로마자로 말해 보세요. 당신의 이야기는 당신의 말로 시작됩니다.',speak:'말하기',card:'외국인등록증',back:'← 이야기로',country:'RESIDENCE CARD · 대한민국',government:'대한민국 정부',people:'인간관계',vocab:'배운 단어',labels:['날짜','시간','허기','건강','자금'],cardLabels:['이름','체류 자격','날짜','장소','허기','건강','직업','자금'],hint:'ENTER로 말하기 · *별표*로 행동 · 힌트 비용 ₩500',times:{morning:'아침',afternoon:'오후',evening:'저녁',night:'밤'},none:'무직'}
+};
+const locale=()=>LOCALES[S.country]||LOCALES.japan;
 const languageDescription=()=>({
   zero:`an absolute beginner in ${destination().language}. NPCs must use the very simplest language, short sentences, and gesture a lot. Judge attempts extremely leniently; single words count as communication.`,
   basic:`a survival-level ${destination().language} speaker (greetings, numbers, simple requests). NPCs use plain short sentences. Judge leniently; reward any comprehensible attempt.`,
@@ -643,6 +649,18 @@ function updateDestinationUI(){
   $('setup-lede').textContent=`${d.lede} Find work. Find a home. Find people. The life you build is made of the words you can say.`;
   $('language-label').textContent=`Your ${d.language} / ${d.script} のレベル`;
   $('say').placeholder=`Speak in ${d.language}… (${d.romanization} OK)`;
+  applyLocale();
+}
+function applyLocale(){
+  const l=locale();
+  document.documentElement.lang=S.country==='china'?'zh-CN':S.country==='korea'?'ko':'ja';
+  document.querySelectorAll('.sb-brand,.brand').forEach(el=>{ el.childNodes[0].nodeValue=l.brand; });
+  $('destination-label').textContent=l.destination; $('begin-btn').textContent=l.play; $('setup-note').textContent=l.note;
+  $('send').textContent=l.speak; $('cardtoggle').textContent=l.card; $('dock-hint').textContent=l.hint;
+  $('card-title').textContent=l.card; $('card-country').textContent=l.country; $('card-government').textContent=l.government;
+  ['label-day','label-time','label-hunger','label-health','label-funds'].forEach((id,i)=>$(id).textContent=l.labels[i]);
+  ['card-name-label','card-status-label','card-day-label','card-location-label','card-hunger-label','card-health-label','card-work-label','card-funds-label'].forEach((id,i)=>$(id).textContent=l.cardLabels[i]);
+  $('people-title').textContent=l.people; $('vocab-title').textContent=l.vocab;
 }
 document.querySelectorAll('#destinations .destination-btn').forEach(b=>{
   b.onclick=()=>{
@@ -660,7 +678,7 @@ document.querySelectorAll('#world-toggle .level-btn').forEach(b=>{
   };
 });
 $('cardtoggle').onclick=()=>{ $('game').classList.toggle('show-card');
-  $('cardtoggle').textContent = $('game').classList.contains('show-card') ? '← 物語へ' : '在留カード'; };
+  $('cardtoggle').textContent = $('game').classList.contains('show-card') ? locale().back : locale().card; };
 
 function renderVocabReview(){
   const list=$('vocab-review-list');
@@ -849,6 +867,7 @@ async function checkForSave(){
 }
 function resumeGame(save){
   S.name=save.name; S.country=save.country||'japan'; S.level=save.level; S.hardcore=!!save.hardcore; S.state=save.state; S.vocab=save.vocab||[];
+  applyLocale();
   S.history=save.history||[]; S.stamps=save.stamps||[];
   S.turnCount=save.turnCount||0; S.signupPrompted=!!save.signupPrompted; S.summary=save.summary||'';
   $('setup').classList.add('hide');
@@ -1245,7 +1264,6 @@ function addStamp(label){
   S.stamps.push(label);
 }
 
-const TIME_JP={morning:'朝',afternoon:'昼',evening:'夕方',night:'夜'};
 function meterClass(v){ return v<=20?'crit': v<=45?'warn':''; }
 function valClass(v){ return v<=20?'crit': v<=45?'warn':''; }
 function renderCard(){
@@ -1254,7 +1272,7 @@ function renderCard(){
   const health = st.health==null?100:st.health;
   $('hud').innerHTML=`${esc(st.location)}${st.job?' · '+esc(st.job):' · 無職'}`;
   $('sb-day').textContent='Day '+st.day;
-  $('sb-time').textContent=TIME_JP[st.time]||st.time;
+  $('sb-time').textContent=(locale().times[st.time]||st.time);
   $('sb-hunger').textContent=hunger+'%';
   $('sb-hunger').className='sb-val '+valClass(hunger);
   $('sb-health').textContent=health+'%';
@@ -1262,11 +1280,11 @@ function renderCard(){
   $('sb-yen').textContent=destination().currency+Number(st.yen).toLocaleString();
   $('c-name').textContent=S.name;
   $('c-visa').textContent=st.visa||'—';
-  $('c-day').textContent='Day '+st.day+' · '+(TIME_JP[st.time]||st.time);
+  $('c-day').textContent=`${locale().labels[0]} ${st.day} · ${locale().times[st.time]||st.time}`;
   $('c-loc').textContent=st.location||'—';
   $('c-hunger').innerHTML=`<span class="meter ${meterClass(hunger)}"><i style="width:${hunger}%"></i></span><span class="meter-pct">${hunger}%</span>`;
   $('c-health').innerHTML=`<span class="meter ${meterClass(health)}"><i style="width:${health}%"></i></span><span class="meter-pct">${health}%</span>`;
-  $('c-job').textContent=st.job||'無職 · none';
+  $('c-job').textContent=st.job||locale().none;
   $('c-yen').textContent=destination().currency+Number(st.yen).toLocaleString();
 
   if(st.alive===false) lockForDeath();
