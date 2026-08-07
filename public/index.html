@@ -239,6 +239,10 @@ header{
 .npc .romaji{font-family:var(--mono);font-size:12px;color:var(--ink-soft);margin-top:4px}
 .npc .en{font-size:13px;color:var(--ink-soft);margin-top:6px;display:none;border-top:1px dashed var(--line);padding-top:6px}
 .npc.revealed .en{display:block}
+.npc-tools{display:flex;gap:8px;align-items:center;margin-top:9px}
+.tts-play{appearance:none;border:1px solid var(--line);background:transparent;color:var(--ink-soft);border-radius:99px;padding:5px 9px;font-family:var(--mono);font-size:11px;line-height:1;cursor:pointer;transition:border-color .16s,color .16s,background .16s}
+.tts-play:hover:not(:disabled){border-color:var(--ai);color:var(--ai);background:color-mix(in srgb,var(--ai) 6%,transparent)}
+.tts-play:disabled{cursor:wait;opacity:.6}
 .reveal-btn{
   margin-top:8px;background:none;border:1px solid var(--line);font-family:var(--mono);
   font-size:11px;padding:3px 10px;color:var(--ink-soft);letter-spacing:.08em;
@@ -460,12 +464,8 @@ aside{
   </p>
   <div class="setup-card" id="setup-card">
     <div id="continue-block" style="display:none;margin-bottom:22px;padding-bottom:20px;border-bottom:1px dashed var(--line)">
-      <span class="field-label">Saved life found · 続きから</span>
-      <div id="continue-summary" style="font-size:13px;color:var(--ink-soft);margin-bottom:12px"></div>
-      <div style="display:flex;gap:10px">
-        <button id="continue-btn" style="flex:1;background:var(--ai);color:var(--paper);border:none;padding:11px;font-family:var(--disp);font-weight:600;font-size:14.5px;letter-spacing:.08em">続きから · Continue</button>
-        <button id="wipe-btn" style="background:none;border:1px solid var(--line);color:var(--ink-soft);padding:11px 14px;font-size:12px;font-family:var(--mono)">Delete save</button>
-      </div>
+      <span class="field-label">Your saved lives · 続きから</span>
+      <div id="lives-list" style="display:grid;gap:8px"></div>
     </div>
     <label class="field-label" for="name-input">Your name / 名前</label>
     <input id="name-input" placeholder="e.g. Miara" maxlength="24" autocomplete="off">
@@ -571,7 +571,7 @@ aside{
    streams the response straight through. Run it with:
 
      npm install
-     cp .env.example .env   # then add your ANTHROPIC_API_KEY
+     cp .env.example .env   # then add your OPENROUTER_API_KEY
      npm start
 
 ===================================================================== */
@@ -579,7 +579,7 @@ const API_ENDPOINT = '/api/turn';
 
 /* ================= STATE ================= */
 const S = {
-  name:'', country:'japan', level:'basic', hardcore:false,
+  name:'', country:'japan', level:'basic', hardcore:false, lifeId:null,
   state:{ day:1, time:'afternoon', location:'Narita Airport', yen:180000,
           hunger:85, health:100, alive:true,
           job:null, visa:'Temporary Visitor (90 days)', relationships:[], flags:[] },
@@ -594,9 +594,9 @@ const DESTINATIONS = {
 };
 const destination=()=>DESTINATIONS[S.country]||DESTINATIONS.japan;
 const LOCALES={
-  japan:{brand:'人生',destination:'Your destination / 行き先',play:'プレイ · Play',note:'日本語かローマ字で話してください。あなたの物語は、あなたの言葉で生まれます。',speak:'話す',card:'在留カード',back:'← 物語へ',country:'RESIDENCE CARD · 日本国',government:'日本国政府',people:'People · 人間関係',vocab:"Words you've earned · 語彙帳",labels:['日','時','腹','体','資金'],cardLabels:['名前','在留資格','日','場所','空腹','健康','仕事','資金'],hint:'ENTERで話す · *アスタリスク*で行動 · ヒントは¥500',times:{morning:'朝',afternoon:'昼',evening:'夕方',night:'夜'},none:'無職 · none'},
-  china:{brand:'人生',destination:'选择目的地',play:'开始游戏',note:'请用中文或拼音说话。你的故事会随着你的话语展开。',speak:'说话',card:'居留卡',back:'← 返回故事',country:'RESIDENCE CARD · 中国',government:'中华人民共和国',people:'人物关系',vocab:'已学词汇',labels:['天数','时间','饥饿','健康','资金'],cardLabels:['姓名','身份','天数','地点','饥饿','健康','工作','资金'],hint:'按 ENTER 说话 · 用 *星号* 表示动作 · 提示费用 ¥500',times:{morning:'早晨',afternoon:'下午',evening:'傍晚',night:'夜晚'},none:'无业'},
-  korea:{brand:'인생',destination:'어디에서 시작할까요?',play:'시작하기',note:'한국어나 로마자로 말해 보세요. 당신의 이야기는 당신의 말로 시작됩니다.',speak:'말하기',card:'외국인등록증',back:'← 이야기로',country:'RESIDENCE CARD · 대한민국',government:'대한민국 정부',people:'인간관계',vocab:'배운 단어',labels:['날짜','시간','허기','건강','자금'],cardLabels:['이름','체류 자격','날짜','장소','허기','건강','직업','자금'],hint:'ENTER로 말하기 · *별표*로 행동 · 힌트 비용 ₩500',times:{morning:'아침',afternoon:'오후',evening:'저녁',night:'밤'},none:'무직'}
+  japan:{brand:'人生',destination:'Your destination / 行き先',play:'プレイ · Play',note:'日本語かローマ字で話してください。あなたの物語は、あなたの言葉で生まれます。',speak:'話す',listen:'🔊 聞く',speechError:'音声エラー',card:'在留カード',back:'← 物語へ',country:'RESIDENCE CARD · 日本国',government:'日本国政府',people:'People · 人間関係',vocab:"Words you've earned · 語彙帳",labels:['日','時','腹','体','資金'],cardLabels:['名前','在留資格','日','場所','空腹','健康','仕事','資金'],hint:'ENTERで話す · *アスタリスク*で行動 · ヒントは¥500',times:{morning:'朝',afternoon:'昼',evening:'夕方',night:'夜'},none:'無職 · none'},
+  china:{brand:'人生',destination:'选择目的地',play:'开始游戏',note:'请用中文或拼音说话。你的故事会随着你的话语展开。',speak:'说话',listen:'🔊 聆听',speechError:'语音错误',card:'居留卡',back:'← 返回故事',country:'RESIDENCE CARD · 中国',government:'中华人民共和国',people:'人物关系',vocab:'已学词汇',labels:['天数','时间','饥饿','健康','资金'],cardLabels:['姓名','身份','天数','地点','饥饿','健康','工作','资金'],hint:'按 ENTER 说话 · 用 *星号* 表示动作 · 提示费用 ¥500',times:{morning:'早晨',afternoon:'下午',evening:'傍晚',night:'夜晚'},none:'无业'},
+  korea:{brand:'인생',destination:'어디에서 시작할까요?',play:'시작하기',note:'한국어나 로마자로 말해 보세요. 당신의 이야기는 당신의 말로 시작됩니다.',speak:'말하기',listen:'🔊 듣기',speechError:'음성 오류',card:'외국인등록증',back:'← 이야기로',country:'RESIDENCE CARD · 대한민국',government:'대한민국 정부',people:'인간관계',vocab:'배운 단어',labels:['날짜','시간','허기','건강','자금'],cardLabels:['이름','체류 자격','날짜','장소','허기','건강','직업','자금'],hint:'ENTER로 말하기 · *별표*로 행동 · 힌트 비용 ₩500',times:{morning:'아침',afternoon:'오후',evening:'저녁',night:'밤'},none:'무직'}
 };
 const locale=()=>LOCALES[S.country]||LOCALES.japan;
 const languageDescription=()=>({
@@ -738,7 +738,8 @@ $('say').addEventListener('keydown',e=>{if(e.key==='Enter')speak();});
 let CURRENT_USER=null;
 let authMode='login';
 let midGameAuth=false;
-const GUEST_SAVE_KEY='jinsei_guest_save_v1';
+const GUEST_LIVES_KEY='jinsei_guest_lives_v2';
+const LEGACY_GUEST_SAVE_KEY='jinsei_guest_save_v1';
 
 function openAuth(fromMidGame){
   midGameAuth=!!fromMidGame;
@@ -802,7 +803,8 @@ async function afterLogin(username){
   if(wasMidGame){
     /* player was already playing as a guest — carry their in-progress life
        over to the new account instead of losing it or restarting */
-    try{ localStorage.removeItem(GUEST_SAVE_KEY); }catch(e){}
+    try{ localStorage.removeItem(GUEST_LIVES_KEY); localStorage.removeItem(LEGACY_GUEST_SAVE_KEY); }catch(e){}
+    S.lifeId=null;
     await saveGame();
   } else {
     await checkForSave();
@@ -845,14 +847,23 @@ async function saveGame(){
   };
   if(CURRENT_USER){
     try{
+      const isNew=!S.lifeId;
       const r = await fetch('/api/save', {
-        method:'PUT', headers:{'Content-Type':'application/json'}, credentials:'same-origin',
-        body: JSON.stringify(payload)
+        method:isNew?'POST':'PUT', headers:{'Content-Type':'application/json'}, credentials:'same-origin',
+        body: JSON.stringify(isNew?{data:payload}:{id:S.lifeId,data:payload})
       });
-      if(r.ok) flashSaved();
+      if(r.ok){ const d=await r.json(); if(isNew) S.lifeId=d.id; flashSaved(); }
     }catch(e){ /* connection hiccup — game stays playable, just not saved this turn */ }
   } else {
-    try{ localStorage.setItem(GUEST_SAVE_KEY, JSON.stringify(payload)); flashSaved(); }
+    try{
+      const raw=localStorage.getItem(GUEST_LIVES_KEY);
+      const lives=raw?JSON.parse(raw):[];
+      if(!S.lifeId) S.lifeId=crypto.randomUUID();
+      const item={id:S.lifeId,data:payload,updatedAt:new Date().toISOString()};
+      const at=lives.findIndex(l=>l.id===S.lifeId);
+      if(at>=0) lives[at]=item; else lives.unshift(item);
+      localStorage.setItem(GUEST_LIVES_KEY,JSON.stringify(lives)); flashSaved();
+    }
     catch(e){ /* storage unavailable — game stays playable, just not saved this turn */ }
   }
 }
@@ -864,31 +875,35 @@ function flashSaved(){
   flashSaved._t=setTimeout(()=>{el.style.opacity='.45';},900);
 }
 async function checkForSave(){
-  let save=null;
+  let lives=[];
   if(CURRENT_USER){
     try{
       const r = await fetch('/api/save', {credentials:'same-origin'});
-      if(r.ok){ const d=await r.json(); save=d.data; }
+      if(r.ok){ const d=await r.json(); lives=d.lives||[]; }
     }catch(e){ /* no save reachable */ }
   } else {
-    try{ const raw=localStorage.getItem(GUEST_SAVE_KEY); if(raw) save=JSON.parse(raw); }catch(e){}
+    try{
+      const raw=localStorage.getItem(GUEST_LIVES_KEY);
+      if(raw) lives=JSON.parse(raw);
+      else { const legacy=localStorage.getItem(LEGACY_GUEST_SAVE_KEY); if(legacy) lives=[{id:crypto.randomUUID(),data:JSON.parse(legacy)}]; }
+    }catch(e){}
   }
-  if(!save){ $('continue-block').style.display='none'; return; }
+  if(!lives.length){ $('continue-block').style.display='none'; return; }
   $('continue-block').style.display='block';
-  const days = save.state.day;
-  $('continue-summary').textContent =
-    `${save.name} · Day ${days} · ${save.state.location||'?'} · ${(DESTINATIONS[save.country||'japan']||destination()).currency}${Number(save.state.yen).toLocaleString()}`
-    + (save.state.job?` · ${save.state.job}`:'');
-  $('continue-btn').onclick=()=>resumeGame(save);
-  $('wipe-btn').onclick=async ()=>{
-    if(confirm('Delete this saved life? This cannot be undone.')){
-      if(CURRENT_USER){ try{ await fetch('/api/save',{method:'DELETE', credentials:'same-origin'}); }catch(e){} }
-      else { try{ localStorage.removeItem(GUEST_SAVE_KEY); }catch(e){} }
-      $('continue-block').style.display='none';
-    }
-  };
+  $('lives-list').innerHTML='';
+  lives.forEach(life=>{
+    const save=life.data, d=DESTINATIONS[save.country||'japan']||destination();
+    const row=document.createElement('div'); row.style.cssText='display:flex;gap:7px';
+    const resume=document.createElement('button'); resume.style.cssText='flex:1;background:var(--ai);color:var(--paper);border:none;padding:9px;text-align:left;font-family:var(--disp)';
+    resume.textContent=`${save.name} · Day ${save.state.day} · ${save.state.location||'?'} · ${d.currency}${Number(save.state.yen).toLocaleString()}`;
+    resume.onclick=()=>resumeGame(save,life.id);
+    const remove=document.createElement('button'); remove.textContent='×'; remove.title='Delete life'; remove.style.cssText='width:34px;background:none;border:1px solid var(--line);color:var(--shu);font-size:18px';
+    remove.onclick=async()=>{ if(!confirm('Delete this saved life? This cannot be undone.')) return; if(CURRENT_USER) await fetch('/api/save?id='+encodeURIComponent(life.id),{method:'DELETE',credentials:'same-origin'}); else { const remaining=lives.filter(x=>x.id!==life.id); localStorage.setItem(GUEST_LIVES_KEY,JSON.stringify(remaining)); } await checkForSave(); };
+    row.append(resume,remove); $('lives-list').appendChild(row);
+  });
 }
-function resumeGame(save){
+function resumeGame(save,lifeId){
+  S.lifeId=lifeId;
   S.name=save.name; S.country=save.country||'japan'; S.level=save.level; S.hardcore=!!save.hardcore; S.state=save.state; S.vocab=save.vocab||[];
   applyLocale();
   S.history=save.history||[]; S.stamps=save.stamps||[];
@@ -910,6 +925,7 @@ initIdentity();
 
 async function start(){
   S.name = $('name-input').value.trim() || 'Traveler';
+  S.lifeId=null;
   $('begin-btn').disabled = true; $('begin-btn').textContent='着陸中…';
   $('setup').classList.add('hide');
   $('game').classList.add('on');
@@ -917,6 +933,7 @@ async function start(){
   const d=destination();
   S.state={ day:1, time:'afternoon', location:d.arrival, yen:d.cash, hunger:85, health:100, alive:true, job:null, visa:d.visa, relationships:[], flags:[] };
   renderCard();
+  await saveGame();
   await turn(null, `[GAME START] ${S.name} has just cleared customs at ${d.arrival}, Day 1, afternoon, with ${d.currency}${d.cash.toLocaleString()}, one suitcase, hunger 85, health 100. Open the story: set the scene vividly but briefly, have the first NPC encounter happen naturally (someone the player must speak ${d.language} with to get what they need — e.g. finding the right local transit). Give suggestions suited to their level.`);
 }
 
@@ -945,6 +962,34 @@ async function speak(){
   $('say').value='';
   addYou(t);
   await turn(t, null);
+}
+
+let activeSpeech=null;
+async function playNpcSpeech(text, country, button){
+  if(!text || button.disabled) return;
+  button.disabled=true;
+  const original=button.textContent;
+  button.textContent='…';
+  try{
+    if(activeSpeech){ activeSpeech.pause(); activeSpeech=null; }
+    const r=await fetch('/api/speech',{
+      method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin',
+      body:JSON.stringify({text,country})
+    });
+    if(!r.ok) throw new Error('speech unavailable');
+    const url=URL.createObjectURL(await r.blob());
+    const audio=new Audio(url);
+    activeSpeech=audio;
+    audio.onended=audio.onerror=()=>{ URL.revokeObjectURL(url); if(activeSpeech===audio) activeSpeech=null; };
+    await audio.play();
+  }catch(e){
+    console.warn('Could not play speech:',e);
+    button.textContent=locale().speechError;
+    setTimeout(()=>{ if(!button.disabled) button.textContent=original; },1600);
+  }finally{
+    button.disabled=false;
+    if(button.textContent==='…') button.textContent=original;
+  }
 }
 
 async function turn(playerText, directive){
@@ -987,9 +1032,13 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
     npcJp=document.createElement('div'); npcJp.className='jp live';
     npcRomaji=document.createElement('div'); npcRomaji.className='romaji';
     npcEn=document.createElement('div'); npcEn.className='en';
+    const tools=document.createElement('div'); tools.className='npc-tools';
+    const play=document.createElement('button'); play.className='tts-play'; play.type='button'; play.textContent=locale().listen; play.setAttribute('aria-label','Hear this line');
+    play.onclick=()=>playNpcSpeech(npcJp.textContent, S.country, play);
     const rb=document.createElement('button'); rb.className='reveal-btn'; rb.textContent='訳を見る';
     rb.onclick=()=>{npcDiv.classList.add('revealed'); rb.remove();};
-    npcDiv.appendChild(npcWho); npcDiv.appendChild(npcJp); npcDiv.appendChild(npcRomaji); npcDiv.appendChild(npcEn); npcDiv.appendChild(rb);
+    tools.appendChild(play); tools.appendChild(rb);
+    npcDiv.appendChild(npcWho); npcDiv.appendChild(npcJp); npcDiv.appendChild(npcRomaji); npcDiv.appendChild(npcEn); npcDiv.appendChild(tools);
     entry.appendChild(npcDiv);
   }
   function updateLive(){
@@ -1082,8 +1131,9 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
         if(!payload || payload==='[DONE]') continue;
         let evt;
         try{ evt=JSON.parse(payload); }catch(e){ continue; }
-        if(evt.type==='content_block_delta' && evt.delta && evt.delta.type==='text_delta'){
-          buf += evt.delta.text;
+        const content=evt.choices?.[0]?.delta?.content;
+        if(typeof content==='string' && content){
+          buf += content;
           gotAnyText=true;
           scheduleRender();
         }
