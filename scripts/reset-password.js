@@ -1,22 +1,14 @@
 #!/usr/bin/env node
 /**
- * Reset a user's password directly in the database.
- *
- * Usage:
- *   node scripts/reset-password.js <username> <new-password>
- *
- * Run this from the jinsei-server directory so it finds data/jinsei.db
- * the same way the Next.js server does. This also
- * logs the user out of every existing session, so anyone using the old
- * password (or an old session cookie) is booted immediately.
+ * Reset a JINSEI password and invalidate the user's active sessions.
+ * Usage: node scripts/reset-password.js <username> <new-password>
  */
-import path from 'path';
-import bcrypt from 'bcryptjs';
-import Database from 'better-sqlite3';
-import { fileURLToPath } from 'url';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_PATH = path.join(__dirname, '..', 'data', 'jinsei.db');
+try {
+  process.loadEnvFile('.env');
+} catch {
+  // Environment variables may already be supplied by the deployment shell.
+}
 
 const [, , username, newPassword] = process.argv;
 
@@ -25,22 +17,35 @@ if (!username || !newPassword) {
   process.exit(1);
 }
 if (newPassword.length < 8) {
-  console.error('Password must be at least 8 characters (same rule the app enforces).');
+  console.error('Password must be at least 8 characters.');
   process.exit(1);
 }
 
-const db = new Database(DB_PATH);
+const { bcrypt, supabaseAdmin } = await import('../lib/server-state.js');
+const client = supabaseAdmin();
+const { data: user, error: lookupError } = await client
+  .from('jinsei_users')
+  .select('id')
+  .eq('username', username)
+  .maybeSingle();
 
-const user = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
+if (lookupError) throw lookupError;
 if (!user) {
   console.error(`No user found with username "${username}".`);
   process.exit(1);
 }
 
-const hash = bcrypt.hashSync(newPassword, 12);
-db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, user.id);
+const passwordHash = bcrypt.hashSync(newPassword, 12);
+const { error: updateError } = await client
+  .from('jinsei_users')
+  .update({ password_hash: passwordHash })
+  .eq('id', user.id);
+if (updateError) throw updateError;
 
-// Invalidate existing sessions so old logins/cookies stop working.
-const { changes } = db.prepare('DELETE FROM sessions WHERE user_id = ?').run(user.id);
+const { error: sessionError, count } = await client
+  .from('jinsei_sessions')
+  .delete({ count: 'exact' })
+  .eq('user_id', user.id);
+if (sessionError) throw sessionError;
 
-console.log(`Password updated for "${username}". ${changes} active session(s) cleared.`);
+console.log(`Password updated for "${username}". ${count || 0} active session(s) cleared.`);

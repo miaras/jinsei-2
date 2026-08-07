@@ -2,15 +2,14 @@
 
 JINSEI is an AI-powered life simulator about arriving in Japan with limited money, limited Japanese, and no established life. Players communicate in Japanese or rōmaji, find work and housing, form relationships, and build a persistent story one turn at a time.
 
-The application uses Next.js, the OpenAI Responses API, and a local SQLite database. Accounts are optional: guests save locally in their browser, while registered players can continue the same life across devices.
+The application uses Next.js, the OpenAI Responses API, and Supabase Postgres. Accounts are optional: guests save locally in their browser, while registered players can continue the same life across devices.
 
 ## Requirements
 
 - Node.js 24 (`24.13.1` is specified in `.nvmrc`)
 - npm
 - An OpenAI API key
-
-The native SQLite dependency must be installed with the same major Node.js version used to run the server. If you use `nvm`, selecting the included Node 24 version before installing avoids native-module ABI errors.
+- A Supabase project and server-side secret key
 
 ## Local setup
 
@@ -25,6 +24,8 @@ Add your OpenAI API key to `.env`:
 
 ```dotenv
 OPENAI_API_KEY=sk-your-key-here
+SUPABASE_URL=https://jotioxgrharwfndnxoir.supabase.co
+SUPABASE_SECRET_KEY=sb_secret_your-secret-key-here
 ```
 
 Start the development server:
@@ -41,10 +42,12 @@ Open [http://localhost:3000](http://localhost:3000).
 | --- | --- | --- | --- |
 | `OPENAI_API_KEY` | Yes | — | Server-side key used for generated game turns. |
 | `OPENAI_MODEL` | No | `gpt-5.6` | OpenAI model used by the turn endpoint. |
+| `SUPABASE_URL` | Yes | — | Supabase project API URL. |
+| `SUPABASE_SECRET_KEY` | Yes | — | Server-only secret key used for database operations. |
 | `PORT` | No | `3000` | Port used by the production server. |
 | `COOKIE_SECURE` | No | `false` | Set to `true` when the site is served over HTTPS. |
 
-Never expose `OPENAI_API_KEY` to browser code or commit `.env`.
+Never expose `OPENAI_API_KEY` or `SUPABASE_SECRET_KEY` to browser code or commit `.env`. In particular, do not prefix the Supabase secret with `NEXT_PUBLIC_`.
 
 Image generation is currently disabled. The `/api/image` endpoint returns HTTP `503`, and `REPLICATE_API_TOKEN` is not used.
 
@@ -73,13 +76,11 @@ app/
 ├── layout.js                 Root layout and metadata
 └── page.js                   Game page entry point
 lib/
-└── server-state.js           SQLite, sessions, and authentication helpers
+└── server-state.js           Supabase client, sessions, and authentication helpers
 public/
 └── index.html                Existing game UI and browser-side game logic
 scripts/
 └── reset-password.js         Administrative password-reset utility
-data/
-└── jinsei.db                 Runtime SQLite database
 ```
 
 `app/page.js` currently loads the established game interface from `public/index.html`. This compatibility layer keeps the original interaction and visual behavior while Next.js owns rendering, API routing, configuration, and production builds.
@@ -105,17 +106,13 @@ Guest turns are limited per IP as a basic cost safeguard. Registered users are n
 
 ## Data and authentication
 
-SQLite data is stored in `data/jinsei.db`. The application creates the database and tables automatically.
+Persistent data is stored in the Supabase project `jinsei` in the Seoul region. The database contains:
 
-The database contains:
+- `jinsei_users`: usernames and bcrypt password hashes
+- `jinsei_sessions`: random session tokens with 30-day expirations
+- `jinsei_saves`: one JSONB save slot per account
 
-- `users`: usernames and bcrypt password hashes
-- `sessions`: random session tokens with 30-day expirations
-- `saves`: one JSON save slot per account
-
-Authentication uses an HTTP-only, same-site cookie named `jinsei_session`. Set `COOKIE_SECURE=true` in HTTPS deployments.
-
-The `data/` directory is ignored by Git. Back it up and mount it on persistent storage in production; ephemeral filesystems will lose accounts and saves when the deployment restarts.
+Authentication uses an HTTP-only, same-site cookie named `jinsei_session`. Set `COOKIE_SECURE=true` in HTTPS deployments. Database access occurs only in Next.js route handlers through `SUPABASE_SECRET_KEY`; the browser has no direct table access. All three tables have RLS enabled, and access for Supabase's `anon` and `authenticated` database roles is revoked.
 
 ## Resetting a password
 
@@ -141,31 +138,16 @@ For production deployments:
 
 - Provide `OPENAI_API_KEY` through the platform's secret manager.
 - Set `COOKIE_SECURE=true` when using HTTPS.
-- Persist the `data/` directory across deploys and restarts.
+- Configure `SUPABASE_URL` and `SUPABASE_SECRET_KEY` as server-side deployment secrets.
 - Avoid buffering `/api/turn` in a reverse proxy, because buffering prevents text from appearing incrementally.
 - Use `/health` for readiness checks.
 
 ## Troubleshooting
 
-### `better_sqlite3.node` was compiled against a different Node.js version
-
-Select Node 24 and rebuild the native dependency:
-
-```bash
-nvm use
-npm rebuild better-sqlite3
-```
-
-If the problem remains, reinstall dependencies from the lockfile under Node 24:
-
-```bash
-npm ci
-```
-
 ### `/api/turn` reports a missing key
 
 Confirm `.env` contains `OPENAI_API_KEY`, then restart the development or production server. Next.js loads environment variables when the server starts.
 
-### Accounts disappear after deployment
+### Account routes report missing Supabase configuration
 
-The deployment is probably using an ephemeral filesystem. Configure a persistent volume for the `data/` directory.
+Set `SUPABASE_URL` and `SUPABASE_SECRET_KEY` in the deployment environment, then redeploy. Use a secret key from the Supabase project's **Connect** or **API Keys** screen, not a publishable browser key.

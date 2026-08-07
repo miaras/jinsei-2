@@ -4,8 +4,8 @@ import {
   COOKIE_NAME,
   createSession,
   currentUser,
-  db,
   sessionCookie,
+  supabaseAdmin,
   USERNAME_RE
 } from '../../../lib/server-state.js';
 
@@ -24,8 +24,8 @@ async function endpoint(context) {
   return (await context.params).endpoint;
 }
 
-function requireUser(request) {
-  const user = currentUser(request);
+async function requireUser(request) {
+  const user = await currentUser(request);
   return user ? { user } : { response: json({ error: 'Not logged in.' }, 401) };
 }
 
@@ -41,13 +41,18 @@ function rateLimited(request) {
 
 export async function GET(request, context) {
   const name = await endpoint(context);
-  const auth = requireUser(request);
+  const auth = await requireUser(request);
   if (auth.response) return auth.response;
 
   if (name === 'me') return json({ username: auth.user.username });
   if (name === 'save') {
-    const row = db.prepare('SELECT data, updated_at AS updatedAt FROM saves WHERE user_id = ?').get(auth.user.id);
-    return row ? json({ data: JSON.parse(row.data), updatedAt: row.updatedAt }) : json({ error: 'No save found.' }, 404);
+    const { data: row, error } = await supabaseAdmin()
+      .from('jinsei_saves')
+      .select('data, updated_at')
+      .eq('user_id', auth.user.id)
+      .maybeSingle();
+    if (error) throw error;
+    return row ? json({ data: row.data, updatedAt: row.updated_at }) : json({ error: 'No save found.' }, 404);
   }
   return json({ error: 'Not found.' }, 404);
 }
@@ -57,7 +62,7 @@ export async function POST(request, context) {
 
   if (name === 'logout') {
     const token = request.cookies.get(COOKIE_NAME)?.value;
-    if (token) db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
+    if (token) await supabaseAdmin().from('jinsei_sessions').delete().eq('token', token);
     const response = json({ ok: true });
     response.cookies.set({ name: COOKIE_NAME, value: '', expires: new Date(0), path: '/' });
     return response;
@@ -71,17 +76,34 @@ export async function POST(request, context) {
     if (name === 'register') {
       if (!USERNAME_RE.test(username)) return json({ error: 'Username: 3-20 characters, letters/numbers/underscore only.' }, 400);
       if (password.length < 8) return json({ error: 'Password must be at least 8 characters.' }, 400);
-      if (db.prepare('SELECT id FROM users WHERE username = ?').get(username)) return json({ error: 'That username is already taken.' }, 409);
+      const client = supabaseAdmin();
+      const { data: existing, error: lookupError } = await client
+        .from('jinsei_users').select('id').eq('username', username).maybeSingle();
+      if (lookupError) throw lookupError;
+      if (existing) return json({ error: 'That username is already taken.' }, 409);
       const hash = bcrypt.hashSync(password, 12);
-      const info = db.prepare('INSERT INTO users (username, password_hash, created_at) VALUES (?, ?, ?)')
-        .run(username, hash, new Date().toISOString());
-      user = { id: info.lastInsertRowid, username };
+      const { data: created, error: createError } = await client
+        .from('jinsei_users')
+        .insert({ username, password_hash: hash })
+        .select('id, username')
+        .single();
+      if (createError) {
+        if (createError.code === '23505') return json({ error: 'That username is already taken.' }, 409);
+        throw createError;
+      }
+      user = created;
     } else {
-      user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
+      const { data, error } = await supabaseAdmin()
+        .from('jinsei_users')
+        .select('id, username, password_hash')
+        .eq('username', username)
+        .maybeSingle();
+      if (error) throw error;
+      user = data;
       if (!user || !bcrypt.compareSync(password, user.password_hash)) return json({ error: 'Wrong username or password.' }, 401);
     }
 
-    const { token, expires } = createSession(user.id);
+    const { token, expires } = await createSession(user.id);
     const response = json({ username: user.username });
     response.cookies.set(sessionCookie(token, expires));
     return response;
@@ -90,7 +112,7 @@ export async function POST(request, context) {
   if (name === 'image') return json({ error: 'Image generation is disabled.' }, 503);
 
   if (name === 'turn') {
-    const user = currentUser(request);
+    const user = await currentUser(request);
     const { system, messages } = await request.json().catch(() => ({}));
     if (typeof system !== 'string' || !Array.isArray(messages)) return json({ error: 'Request must include "system" (string) and "messages" (array).' }, 400);
     if (!process.env.OPENAI_API_KEY) return json({ error: 'Server is missing OPENAI_API_KEY.' }, 500);
@@ -127,23 +149,27 @@ export async function POST(request, context) {
 
 export async function PUT(request, context) {
   if (await endpoint(context) !== 'save') return json({ error: 'Not found.' }, 404);
-  const auth = requireUser(request);
+  const auth = await requireUser(request);
   if (auth.response) return auth.response;
   const data = await request.json().catch(() => null);
   if (!data || typeof data !== 'object' || Array.isArray(data)) return json({ error: 'Save payload must be an object.' }, 400);
   const serialized = JSON.stringify(data);
   if (serialized.length > 2_000_000) return json({ error: 'Save is too large.' }, 413);
   const now = new Date().toISOString();
-  db.prepare(`INSERT INTO saves (user_id, data, updated_at) VALUES (?, ?, ?)
-    ON CONFLICT(user_id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at`)
-    .run(auth.user.id, serialized, now);
+  const { error } = await supabaseAdmin().from('jinsei_saves').upsert({
+    user_id: auth.user.id,
+    data,
+    updated_at: now
+  });
+  if (error) throw error;
   return json({ ok: true, updatedAt: now });
 }
 
 export async function DELETE(request, context) {
   if (await endpoint(context) !== 'save') return json({ error: 'Not found.' }, 404);
-  const auth = requireUser(request);
+  const auth = await requireUser(request);
   if (auth.response) return auth.response;
-  db.prepare('DELETE FROM saves WHERE user_id = ?').run(auth.user.id);
+  const { error } = await supabaseAdmin().from('jinsei_saves').delete().eq('user_id', auth.user.id);
+  if (error) throw error;
   return json({ ok: true });
 }
