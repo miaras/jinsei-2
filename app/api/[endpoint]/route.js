@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createHash } from 'node:crypto';
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import {
   bcrypt,
   COOKIE_NAME,
@@ -15,6 +15,9 @@ export const dynamic = 'force-dynamic';
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const MODEL = process.env.OPENROUTER_MODEL || 'deepseek/deepseek-v4-flash';
+const FREE_TURN_LIMIT = 20;
+const GUEST_USAGE_COOKIE = 'jinsei_guest_usage';
+const ACTIVE_SUBSCRIPTION_STATUSES = new Set(['active', 'trialing']);
 const anonTurnLog = new Map();
 const speechLog = new Map();
 const SPEECH_BUCKET = 'jinsei-speech';
@@ -26,6 +29,279 @@ const VOICES = {
 
 function json(data, status = 200) {
   return NextResponse.json(data, { status });
+}
+
+function appOrigin(request) {
+  return (process.env.APP_URL || new URL(request.url).origin).replace(/\/$/, '');
+}
+
+async function stripeRequest(path, params) {
+  if (!process.env.STRIPE_SECRET_KEY) throw new Error('STRIPE_SECRET_KEY is not configured.');
+  const response = await fetch(`https://api.stripe.com/v1${path}`, {
+    method: params ? 'POST' : 'GET',
+    headers: {
+      'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}`,
+      ...(params ? { 'Content-Type': 'application/x-www-form-urlencoded' } : {})
+    },
+    body: params ? new URLSearchParams(params).toString() : undefined
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(payload.error?.message || `Stripe returned HTTP ${response.status}.`);
+    error.status = response.status;
+    throw error;
+  }
+  return payload;
+}
+
+function stripePriceForPlan(plan) {
+  if (plan === 'unlimited') return process.env.STRIPE_PRICE_UNLIMITED;
+  if (plan === 'pictures') return process.env.STRIPE_PRICE_PICTURES;
+  return null;
+}
+
+function planForStripePrice(priceId) {
+  if (priceId && priceId === process.env.STRIPE_PRICE_UNLIMITED) return 'unlimited';
+  if (priceId && priceId === process.env.STRIPE_PRICE_PICTURES) return 'pictures';
+  return 'free';
+}
+
+async function subscriptionRow(userId) {
+  const { data, error } = await supabaseAdmin()
+    .from('jinsei_subscriptions')
+    .select('plan, status, stripe_customer_id, stripe_subscription_id, stripe_price_id, current_period_end, cancel_at_period_end')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+function effectiveEntitlement(row) {
+  const periodValid = !row?.current_period_end || new Date(row.current_period_end) > new Date();
+  const active = Boolean(row && ACTIVE_SUBSCRIPTION_STATUSES.has(row.status) && periodValid);
+  const plan = active && (row.plan === 'unlimited' || row.plan === 'pictures') ? row.plan : 'free';
+  return {
+    plan,
+    unlimited: plan !== 'free',
+    pictures: plan === 'pictures',
+    status: row?.status || 'inactive',
+    currentPeriodEnd: row?.current_period_end || null,
+    cancelAtPeriodEnd: Boolean(row?.cancel_at_period_end),
+    customerId: row?.stripe_customer_id || null,
+    subscriptionId: row?.stripe_subscription_id || null
+  };
+}
+
+async function entitlementForUser(user) {
+  return effectiveEntitlement(user ? await subscriptionRow(user.id) : null);
+}
+
+function usageIdentity(request, user) {
+  if (user) return { subjectKey: `user:${user.id}`, newGuestToken: null };
+  let token = request.cookies.get(GUEST_USAGE_COOKIE)?.value;
+  let newGuestToken = null;
+  if (!token || !/^[a-f0-9]{64}$/.test(token)) {
+    token = randomBytes(32).toString('hex');
+    newGuestToken = token;
+  }
+  const digest = createHash('sha256').update(token).digest('hex');
+  return { subjectKey: `guest:${digest}`, newGuestToken };
+}
+
+async function turnUsage(subjectKey) {
+  const { data, error } = await supabaseAdmin()
+    .from('jinsei_turn_usage')
+    .select('turns_used')
+    .eq('subject_key', subjectKey)
+    .maybeSingle();
+  if (error) throw error;
+  const used = data?.turns_used || 0;
+  return { used, remaining: Math.max(0, FREE_TURN_LIMIT - used) };
+}
+
+async function reserveTurn(subjectKey, unlimited) {
+  const { data, error } = await supabaseAdmin().rpc('consume_jinsei_turn', {
+    p_subject_key: subjectKey,
+    p_unlimited: unlimited
+  });
+  if (error) throw error;
+  const result = data?.[0];
+  return {
+    allowed: Boolean(result?.allowed),
+    used: Number(result?.used || 0),
+    remaining: unlimited ? null : Number(result?.remaining || 0)
+  };
+}
+
+async function refundTurn(subjectKey) {
+  const { error } = await supabaseAdmin().rpc('refund_jinsei_turn', { p_subject_key: subjectKey });
+  if (error) console.error('Could not refund failed turn quota:', error);
+}
+
+function setGuestUsageCookie(response, token) {
+  if (!token) return;
+  response.cookies.set({
+    name: GUEST_USAGE_COOKIE,
+    value: token,
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.COOKIE_SECURE === 'true',
+    maxAge: 365 * 24 * 60 * 60,
+    path: '/'
+  });
+}
+
+function verifyStripeSignature(payload, signatureHeader) {
+  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!secret || !signatureHeader) return false;
+  const parts = signatureHeader.split(',');
+  const timestamp = parts.find(part => part.startsWith('t='))?.slice(2);
+  const signatures = parts.filter(part => part.startsWith('v1=')).map(part => part.slice(3));
+  if (!timestamp || Math.abs(Date.now() / 1000 - Number(timestamp)) > 300) return false;
+  const expected = createHmac('sha256', secret).update(`${timestamp}.${payload}`).digest('hex');
+  return signatures.some(signature => {
+    if (signature.length !== expected.length) return false;
+    return timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+  });
+}
+
+async function syncStripeSubscription(subscription) {
+  const client = supabaseAdmin();
+  let userId = Number(subscription.metadata?.jinsei_user_id);
+  if (!Number.isSafeInteger(userId)) {
+    const { data, error } = await client.from('jinsei_subscriptions')
+      .select('user_id')
+      .or(`stripe_subscription_id.eq.${subscription.id},stripe_customer_id.eq.${subscription.customer}`)
+      .maybeSingle();
+    if (error) throw error;
+    userId = data?.user_id;
+  }
+  if (!userId) throw new Error(`No JINSEI user mapping for Stripe subscription ${subscription.id}.`);
+  const priceId = subscription.items?.data?.[0]?.price?.id || null;
+  const plan = subscription.status === 'canceled' ? 'free' : planForStripePrice(priceId);
+  const periodEnd = subscription.current_period_end || subscription.items?.data?.[0]?.current_period_end;
+  const { error } = await client.from('jinsei_subscriptions').upsert({
+    user_id: userId,
+    plan,
+    status: subscription.status,
+    stripe_customer_id: String(subscription.customer),
+    stripe_subscription_id: subscription.id,
+    stripe_price_id: priceId,
+    current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
+    cancel_at_period_end: Boolean(subscription.cancel_at_period_end),
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'user_id' });
+  if (error) throw error;
+}
+
+async function handleStripeWebhook(request) {
+  const payload = await request.text();
+  if (!verifyStripeSignature(payload, request.headers.get('stripe-signature'))) {
+    return json({ error: 'Invalid Stripe signature.' }, 400);
+  }
+  const event = JSON.parse(payload);
+  const client = supabaseAdmin();
+  const { data: seen, error: seenError } = await client.from('jinsei_stripe_events')
+    .select('event_id').eq('event_id', event.id).maybeSingle();
+  if (seenError) throw seenError;
+  if (seen) return json({ received: true, duplicate: true });
+
+  if (event.type === 'customer.subscription.created' ||
+      event.type === 'customer.subscription.updated' ||
+      event.type === 'customer.subscription.deleted') {
+    await syncStripeSubscription(event.data.object);
+  } else if (event.type === 'checkout.session.completed' && event.data.object.subscription) {
+    const subscription = await stripeRequest(`/subscriptions/${encodeURIComponent(event.data.object.subscription)}`);
+    await syncStripeSubscription(subscription);
+  }
+
+  const { error: eventError } = await client.from('jinsei_stripe_events').insert({
+    event_id: event.id,
+    event_type: event.type
+  });
+  if (eventError && eventError.code !== '23505') throw eventError;
+  return json({ received: true });
+}
+
+async function generateSceneImage(request, user) {
+  const entitlement = await entitlementForUser(user);
+  if (!entitlement.pictures) return json({ error: 'The Pictures plan is required.', code: 'PICTURES_PLAN_REQUIRED' }, 402);
+  if (!process.env.REPLICATE_API_TOKEN) return json({ error: 'Server is missing REPLICATE_API_TOKEN.' }, 500);
+  const { prompt, lifeId, turnNumber } = await request.json().catch(() => ({}));
+  if (typeof prompt !== 'string' || !prompt.trim() || prompt.length > 1000) return json({ error: 'A valid image prompt is required.' }, 400);
+  if (typeof lifeId !== 'string' || !/^[0-9a-f-]{36}$/i.test(lifeId)) return json({ error: 'A valid life id is required.' }, 400);
+  if (!Number.isInteger(turnNumber) || turnNumber < 0) return json({ error: 'A valid turn number is required.' }, 400);
+
+  const client = supabaseAdmin();
+  const { data: life, error: lifeError } = await client.from('jinsei_lives')
+    .select('id, data').eq('id', lifeId).eq('user_id', user.id).maybeSingle();
+  if (lifeError) throw lifeError;
+  if (!life) return json({ error: 'Life not found.' }, 404);
+  const savedTurn = Number(life.data?.turnCount || 0);
+  if (turnNumber !== savedTurn && turnNumber !== savedTurn + 1) return json({ error: 'That image does not match the current turn.' }, 409);
+
+  const promptHash = createHash('sha256').update(prompt.trim()).digest('hex');
+  const { data: generation, error: reserveError } = await client.from('jinsei_image_generations')
+    .insert({ user_id: user.id, life_id: lifeId, turn_number: turnNumber, prompt_hash: promptHash })
+    .select('id').single();
+  if (reserveError?.code === '23505') {
+    const { data: existing, error: existingError } = await client.from('jinsei_image_generations')
+      .select('id, storage_path').eq('user_id', user.id).eq('life_id', lifeId).eq('turn_number', turnNumber).single();
+    if (existingError) throw existingError;
+    if (existing.storage_path) return json({ url: `/api/generated-image?id=${existing.id}`, cached: true });
+    return json({ error: 'This turn\'s picture is already being generated.' }, 409);
+  }
+  if (reserveError) throw reserveError;
+
+  try {
+    const predictionResponse = await fetch('https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.REPLICATE_API_TOKEN}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'wait=60',
+        'Cancel-After': '90s'
+      },
+      body: JSON.stringify({
+        input: {
+          prompt: prompt.trim(),
+          go_fast: true,
+          num_outputs: 1,
+          aspect_ratio: '16:9',
+          output_format: 'webp',
+          output_quality: 80
+        }
+      }),
+      signal: request.signal
+    });
+    const prediction = await predictionResponse.json().catch(() => ({}));
+    if (!predictionResponse.ok) throw new Error(prediction.detail || prediction.error || 'Replicate returned an error.');
+    const outputUrl = Array.isArray(prediction.output) ? prediction.output[0] : prediction.output;
+    if (typeof outputUrl !== 'string') throw new Error('Replicate did not finish the picture in time.');
+    const parsedOutput = new URL(outputUrl);
+    if (parsedOutput.protocol !== 'https:' || !(parsedOutput.hostname === 'replicate.delivery' || parsedOutput.hostname.endsWith('.replicate.delivery'))) {
+      throw new Error('Replicate returned an unexpected output URL.');
+    }
+    const imageResponse = await fetch(outputUrl, { signal: request.signal });
+    if (!imageResponse.ok) throw new Error('Could not download the generated picture.');
+    const image = Buffer.from(await imageResponse.arrayBuffer());
+    if (!image.length || image.length > 10 * 1024 * 1024) throw new Error('Generated picture has an invalid size.');
+    const storagePath = `${user.id}/${lifeId}/${turnNumber}-${generation.id}.webp`;
+    const { error: uploadError } = await client.storage.from('jinsei-images').upload(storagePath, image, {
+      contentType: 'image/webp',
+      cacheControl: '31536000',
+      upsert: false
+    });
+    if (uploadError) throw uploadError;
+    const { error: updateError } = await client.from('jinsei_image_generations')
+      .update({ storage_path: storagePath }).eq('id', generation.id);
+    if (updateError) throw updateError;
+    return json({ url: `/api/generated-image?id=${generation.id}` });
+  } catch (error) {
+    await client.from('jinsei_image_generations').delete().eq('id', generation.id);
+    console.error('Scene image generation failed:', error);
+    return json({ error: error.message || 'Image generation failed.' }, 502);
+  }
 }
 
 async function endpoint(context) {
@@ -141,10 +417,46 @@ async function synthesizeSpeech(request) {
 
 export async function GET(request, context) {
   const name = await endpoint(context);
+
+  if (name === 'plan') {
+    const user = await currentUser(request);
+    const entitlement = await entitlementForUser(user);
+    const identity = usageIdentity(request, user);
+    const usage = await turnUsage(identity.subjectKey);
+    return json({
+      plan: entitlement.plan,
+      status: entitlement.status,
+      unlimited: entitlement.unlimited,
+      pictures: entitlement.pictures,
+      remaining: entitlement.unlimited ? null : usage.remaining,
+      freeTurnLimit: FREE_TURN_LIMIT,
+      currentPeriodEnd: entitlement.currentPeriodEnd,
+      cancelAtPeriodEnd: entitlement.cancelAtPeriodEnd,
+      billingConfigured: Boolean(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_PRICE_UNLIMITED && process.env.STRIPE_PRICE_PICTURES),
+      canManageBilling: Boolean(entitlement.customerId)
+    });
+  }
+
   const auth = await requireUser(request);
   if (auth.response) return auth.response;
 
   if (name === 'me') return json({ username: auth.user.username });
+  if (name === 'generated-image') {
+    const id = new URL(request.url).searchParams.get('id');
+    if (!id) return json({ error: 'An image id is required.' }, 400);
+    const { data: generation, error } = await supabaseAdmin().from('jinsei_image_generations')
+      .select('storage_path').eq('id', id).eq('user_id', auth.user.id).maybeSingle();
+    if (error) throw error;
+    if (!generation?.storage_path) return json({ error: 'Picture not found.' }, 404);
+    const { data: image, error: downloadError } = await supabaseAdmin().storage.from('jinsei-images').download(generation.storage_path);
+    if (downloadError || !image) return json({ error: 'Picture not found.' }, 404);
+    return new Response(await image.arrayBuffer(), {
+      headers: {
+        'Content-Type': 'image/webp',
+        'Cache-Control': 'private, max-age=31536000, immutable'
+      }
+    });
+  }
   if (name === 'save') {
     const { data: rows, error } = await supabaseAdmin()
       .from('jinsei_lives')
@@ -159,6 +471,8 @@ export async function GET(request, context) {
 
 export async function POST(request, context) {
   const name = await endpoint(context);
+
+  if (name === 'stripe-webhook') return handleStripeWebhook(request);
 
   if (name === 'logout') {
     const token = request.cookies.get(COOKIE_NAME)?.value;
@@ -209,7 +523,62 @@ export async function POST(request, context) {
     return response;
   }
 
-  if (name === 'image') return json({ error: 'Image generation is disabled.' }, 503);
+  if (name === 'checkout') {
+    const auth = await requireUser(request);
+    if (auth.response) return auth.response;
+    const { plan } = await request.json().catch(() => ({}));
+    const price = stripePriceForPlan(plan);
+    if (!price) return json({ error: 'That subscription plan is not configured.' }, 400);
+    const existing = await subscriptionRow(auth.user.id);
+    const entitlement = effectiveEntitlement(existing);
+    if (entitlement.unlimited && entitlement.subscriptionId) {
+      return json({ error: 'Manage your existing subscription before changing plans.', code: 'SUBSCRIPTION_EXISTS' }, 409);
+    }
+    try {
+      const params = {
+        mode: 'subscription',
+        'line_items[0][price]': price,
+        'line_items[0][quantity]': '1',
+        client_reference_id: String(auth.user.id),
+        'metadata[jinsei_user_id]': String(auth.user.id),
+        'metadata[plan]': plan,
+        'subscription_data[metadata][jinsei_user_id]': String(auth.user.id),
+        'subscription_data[metadata][plan]': plan,
+        success_url: `${appOrigin(request)}/?billing=success`,
+        cancel_url: `${appOrigin(request)}/?billing=canceled`,
+        allow_promotion_codes: 'true'
+      };
+      if (existing?.stripe_customer_id) params.customer = existing.stripe_customer_id;
+      const session = await stripeRequest('/checkout/sessions', params);
+      return json({ url: session.url });
+    } catch (error) {
+      console.error('Could not create Stripe Checkout session:', error);
+      return json({ error: error.message || 'Could not start checkout.' }, error.status || 502);
+    }
+  }
+
+  if (name === 'portal') {
+    const auth = await requireUser(request);
+    if (auth.response) return auth.response;
+    const existing = await subscriptionRow(auth.user.id);
+    if (!existing?.stripe_customer_id) return json({ error: 'No billing account exists yet.' }, 404);
+    try {
+      const session = await stripeRequest('/billing_portal/sessions', {
+        customer: existing.stripe_customer_id,
+        return_url: appOrigin(request)
+      });
+      return json({ url: session.url });
+    } catch (error) {
+      console.error('Could not create Stripe billing portal session:', error);
+      return json({ error: error.message || 'Could not open billing settings.' }, error.status || 502);
+    }
+  }
+
+  if (name === 'image') {
+    const auth = await requireUser(request);
+    if (auth.response) return auth.response;
+    return generateSceneImage(request, auth.user);
+  }
 
   if (name === 'speech') return synthesizeSpeech(request);
 
@@ -235,6 +604,24 @@ export async function POST(request, context) {
     if (!process.env.OPENROUTER_API_KEY) return json({ error: 'Server is missing OPENROUTER_API_KEY.' }, 500);
     if (!user && rateLimited(request)) return json({ error: 'Guest play is limited. Sign up to keep going.' }, 429);
 
+    const lastMessage = messages.at(-1)?.content;
+    const countTowardLimit = !(typeof lastMessage === 'string' && lastMessage.startsWith('[GAME START]'));
+    const identity = usageIdentity(request, user);
+    const entitlement = await entitlementForUser(user);
+    let reservation = { allowed: true, remaining: entitlement.unlimited ? null : FREE_TURN_LIMIT };
+    if (countTowardLimit) {
+      reservation = await reserveTurn(identity.subjectKey, entitlement.unlimited);
+      if (!reservation.allowed) {
+        const response = json({
+          error: 'You have used all 20 free turns. Choose a plan to keep playing.',
+          code: 'TURN_LIMIT',
+          remaining: 0
+        }, 402);
+        setGuestUsageCookie(response, identity.newGuestToken);
+        return response;
+      }
+    }
+
     let upstream;
     try {
       upstream = await fetch(OPENROUTER_URL, {
@@ -253,21 +640,27 @@ export async function POST(request, context) {
         signal: request.signal
       });
     } catch (error) {
+      if (countTowardLimit && !entitlement.unlimited) await refundTurn(identity.subjectKey);
       console.error('Could not reach OpenRouter:', error);
       return json({ error: 'Could not reach the OpenRouter API.' }, 502);
     }
     if (!upstream.ok || !upstream.body) {
+      if (countTowardLimit && !entitlement.unlimited) await refundTurn(identity.subjectKey);
       const detail = await upstream.text().catch(() => '');
       console.error('OpenRouter API error:', upstream.status, detail);
       return json({ error: 'OpenRouter API returned an error.', detail }, upstream.status);
     }
-    return new Response(upstream.body, {
+    const response = new NextResponse(upstream.body, {
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache, no-transform',
-        'X-Accel-Buffering': 'no'
+        'X-Accel-Buffering': 'no',
+        'X-Jinsei-Plan': entitlement.plan,
+        'X-Jinsei-Remaining': reservation.remaining === null ? 'unlimited' : String(reservation.remaining)
       }
     });
+    setGuestUsageCookie(response, identity.newGuestToken);
+    return response;
   }
 
   return json({ error: 'Not found.' }, 404);

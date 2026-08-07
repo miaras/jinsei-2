@@ -178,6 +178,30 @@ input{font-family:inherit}
   white-space:nowrap;
 }
 .sb-logout:hover{border-color:var(--paper);color:var(--paper)}
+.sb-plan{
+  background:var(--shu);border:1px solid var(--shu);color:#fff;
+  font-family:var(--mono);font-size:10px;letter-spacing:.05em;padding:4px 9px;margin-left:auto;
+  white-space:nowrap;cursor:pointer;
+}
+.sb-plan:hover{filter:brightness(1.08)}
+
+/* ============ PLANS / BILLING ============ */
+#plans{position:fixed;inset:0;z-index:220;display:flex;align-items:center;justify-content:center;padding:20px}
+.plans-backdrop{position:absolute;inset:0;background:rgba(35,31,27,.62)}
+#plans-card{position:relative;z-index:1;width:min(760px,100%);max-height:calc(100vh - 40px);overflow-y:auto}
+#plans-close{position:absolute;right:12px;top:10px;background:none;border:none;color:var(--ink-soft);font-size:18px}
+.plans-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:18px 0 12px}
+.plan-card{border:1px solid var(--line);background:#FBF8EF;padding:18px;display:flex;flex-direction:column;min-height:210px}
+.plan-card.featured{border:2px solid var(--ai);box-shadow:4px 4px 0 var(--ai-soft)}
+.plan-name{font-family:var(--disp);font-size:20px;font-weight:700}
+.plan-price{font-family:var(--mono);font-size:24px;margin:10px 0}.plan-price span{font-size:11px;color:var(--ink-soft)}
+.plan-copy{font-size:13px;line-height:1.55;color:var(--ink-soft);flex:1}
+.plan-action{width:100%;border:none;background:var(--ink);color:var(--paper);font-family:var(--disp);font-weight:700;padding:11px;margin-top:15px}
+.plan-card.featured .plan-action{background:var(--ai)}
+.plan-action:disabled{opacity:.5;cursor:wait}
+#manage-billing{display:none;margin:10px auto 0;background:none;border:none;text-decoration:underline;color:var(--ink-soft);font-size:12px}
+.plans-foot{font-size:11px;line-height:1.5;color:var(--ink-soft);text-align:center}
+@media(max-width:620px){.plans-grid{grid-template-columns:1fr}.plan-card{min-height:0}}
 
 /* ============ SIGN-UP NUDGE (guest, turn 10) ============ */
 .signup-nudge{
@@ -431,6 +455,7 @@ aside{
   <span class="sb-item"><span class="sb-label" id="label-health">体 Health</span><span class="sb-val" id="sb-health">—</span></span>
   <span class="sb-item"><span class="sb-label" id="label-funds">Funds</span><span class="sb-val yen" id="sb-yen">—</span></span>
   <span class="sb-save" id="sb-save"></span>
+  <button class="sb-plan" id="sb-plan" type="button">FREE · 20</button>
   <button class="sb-logout" id="sb-logout" title="Log out">ログアウト</button>
 </div>
 
@@ -451,6 +476,33 @@ aside{
     <div id="auth-error"></div>
     <button id="auth-submit">ログイン · Log in</button>
     <p class="setup-note" id="auth-note">New here? Register above — your life is saved to this account, so you can pick it up from any device.</p>
+  </div>
+</section>
+
+<!-- ================= PLANS / BILLING ================= -->
+<section id="plans" class="hide" aria-label="Subscription plans">
+  <div class="plans-backdrop"></div>
+  <div class="setup-card" id="plans-card">
+    <button id="plans-close" type="button" aria-label="Close">✕</button>
+    <div class="setup-sub" id="plans-kicker">Choose your journey</div>
+    <h2 class="plan-name" id="plans-title">Keep your life going</h2>
+    <p class="setup-note" id="plans-status">The free version includes 20 turns.</p>
+    <div class="plans-grid">
+      <article class="plan-card">
+        <div class="plan-name" id="unlimited-name">Unlimited</div>
+        <div class="plan-price">$4.99 <span id="unlimited-period">/ month</span></div>
+        <div class="plan-copy" id="unlimited-copy">Unlimited story turns, saved lives, and WaveNet speech.</div>
+        <button class="plan-action" id="buy-unlimited" type="button">Choose Unlimited</button>
+      </article>
+      <article class="plan-card featured">
+        <div class="plan-name" id="pictures-name">Unlimited + Pictures</div>
+        <div class="plan-price">$9.99 <span id="pictures-period">/ month</span></div>
+        <div class="plan-copy" id="pictures-copy">Everything in Unlimited, with a generated scene picture for every game turn.</div>
+        <button class="plan-action" id="buy-pictures" type="button">Choose Pictures</button>
+      </article>
+    </div>
+    <button id="manage-billing" type="button">Manage or cancel subscription</button>
+    <p class="plans-foot" id="plans-foot">Recurring monthly. Cancel any time. Pictures are limited to one generation per game turn.</p>
   </div>
 </section>
 
@@ -491,6 +543,7 @@ aside{
     -->
     <button id="begin-btn">プレイ · Play</button>
     <p class="setup-note" id="setup-note">Type in Japanese or rōmaji. Your story is generated as you live it.</p>
+    <p class="setup-note"><button id="open-plans" type="button" style="background:none;border:none;text-decoration:underline;color:var(--ai);font:inherit">20 turns free · View plans</button></p>
     <p class="setup-note" id="identity-line"></p>
   </div>
 </section>
@@ -567,7 +620,7 @@ aside{
    DEPLOYMENT
    ---------------------------------------------------------------------
    This page talks to '/api/turn', a small Node/Express server (see
-   Next.js route handler that holds the Anthropic API key and
+   Next.js route handler that holds the OpenRouter API key and
    streams the response straight through. Run it with:
 
      npm install
@@ -584,7 +637,7 @@ const S = {
           hunger:85, health:100, alive:true,
           job:null, visa:'Temporary Visitor (90 days)', relationships:[], flags:[] },
   vocab:[], history:[], stamps:[], busy:false, hintSpend:0,
-  turnCount:0, signupPrompted:false, summary:''
+  turnCount:0, signupPrompted:false, summary:'', awaitingAction:false
 };
 const HINT_COST = 500;
 const DESTINATIONS = {
@@ -610,7 +663,7 @@ const SYSTEM = () => `You are the game engine of 人生 (JINSEI), a slice-of-lif
 ${S.summary ? `STORY SO FAR (a running summary of everything that happened before the recent messages below — the recent message history is truncated to save space, so THIS is your memory of earlier events; treat it as canon and keep continuity with it):\n${S.summary}\n` : ''}
 CORE RULE — THE LANGUAGE GATE: The player must communicate in ${destination().language} (${destination().romanization} input is fine and should be read as ${destination().language}) to accomplish anything. If they write in English, NPCs respond with polite confusion in the local language and the situation does not advance — except rare NPCs who plausibly know some English, who may help a little but push the player toward ${destination().language}. Never let English fully succeed.
 
-ACTIONS: Text wrapped in asterisks is a physical action, not speech — e.g. *wait*, *point at the menu*, *bow*, *hand over money*. Actions may be written in English; they bypass the language gate because they are non-verbal. Gesturing can get simple things done, but anything requiring words — jobs, friendships, paperwork, romance — still demands spoken ${destination().language}. When a turn is action-only, FEEDBACK should be UNDERSTOOD: none, not a language judgment.
+ACTIONS: Text wrapped in asterisks is a physical action, not speech — e.g. *wait*, *point at the menu*, *bow*, *hand over money*. Actions may be written in English; they bypass the language gate because they are non-verbal. Gesturing can get simple things done, but anything requiring words — jobs, friendships, paperwork, romance — still demands spoken ${destination().language}. When a turn is action-only, FEEDBACK should be UNDERSTOOD: none, not a language judgment. When the incoming message is labelled PLAYER ACTION, it is definitely an action even if it has no asterisks; take whatever the player typed as the action and do not apply the language gate to it.
 
 STORY RULES:
 - ${S.hardcore ? `Recognizably ${destination().country} — its transit, food, bureaucracy, neighborhoods, and seasons — but tonally unstable: specific and concrete in its details, uncanny and often darkly funny in how those details behave.` : `Grounded, warm, specific. Real neighborhoods, transit, food, city paperwork, seasons, and social customs in ${destination().country}. Small moments matter.`}
@@ -620,6 +673,7 @@ STORY RULES:
 - Teach: NPC lines should be natural for the player's level, and each turn introduce 0-2 genuinely useful words.
 - Judge the player's ${destination().language} in FEEDBACK: UNDERSTOOD yes/partial/no. Give ONE short coaching NOTE and, if helpful, a corrected/improved sentence in BETTER (${destination().language} + ${destination().romanization} in parentheses). Be encouraging, never pedantic. If there is no player utterance to judge, write UNDERSTOOD: none, NOTE: none, BETTER: none.
 - Keep everything SHORT. Narration 2-3 sentences. One NPC line per turn, 1-2 sentences.
+- When nobody is speaking to the player, OMIT @@NPC@@. In that case, append this exact English sentence as the final sentence of @@NARRATION@@: "What do you want to do? Type what you want to do." This is an action prompt, not dialogue.
 
 SURVIVAL — HUNGER, HEALTH, DEATH: This life has real stakes. Track "hunger" and "health" (0-100 each) in STATE every turn.
 - Hunger drains steadily with time (roughly ${S.hardcore ? '15-30' : '10-20'} per skipped meal or half-day of neglect). Eating a real meal restores it substantially (40-70); a small snack helps a little (15-25).
@@ -670,8 +724,14 @@ function updateDestinationUI(){
   const d=destination();
   $('setup-lede').textContent=`${d.lede} Find work. Find a home. Find people. The life you build is made of the words you can say.`;
   $('language-label').textContent=`Your ${d.language} / ${d.script} のレベル`;
-  $('say').placeholder=`Speak in ${d.language}… (${d.romanization} OK)`;
+  updateInputPrompt();
   applyLocale();
+}
+function updateInputPrompt(){
+  const d=destination();
+  $('say').placeholder=S.awaitingAction
+    ? 'What do you want to do? Type what you want to do.'
+    : `Speak in ${d.language}… (${d.romanization} OK)`;
 }
 function applyLocale(){
   const l=locale();
@@ -736,10 +796,80 @@ $('say').addEventListener('keydown',e=>{if(e.key==='Enter')speak();});
 
 /* ================= AUTH (optional — modal usable pre-game or mid-game) ================= */
 let CURRENT_USER=null;
+let CURRENT_PLAN={plan:'free',status:'inactive',unlimited:false,pictures:false,remaining:20,freeTurnLimit:20,billingConfigured:false,canManageBilling:false};
 let authMode='login';
 let midGameAuth=false;
+let pendingCheckoutPlan=null;
 const GUEST_LIVES_KEY='jinsei_guest_lives_v2';
 const LEGACY_GUEST_SAVE_KEY='jinsei_guest_save_v1';
+const BILLING_COPY={
+  japan:{kicker:'Choose your journey',title:'Keep your life going',free:n=>`The free version includes 20 turns. ${n} remaining.`,unlimited:'Unlimited',pictures:'Unlimited + Pictures',period:'/ month',uCopy:'Unlimited story turns, saved lives, and WaveNet speech.',pCopy:'Everything in Unlimited, with a generated scene picture for every game turn.',chooseU:'Choose Unlimited',chooseP:'Choose Pictures',current:'Current plan',manage:'Manage or cancel subscription',foot:'Recurring monthly. Cancel any time. Pictures are limited to one generation per game turn.'},
+  china:{kicker:'选择旅程',title:'继续你的人生',free:n=>`免费版包含 20 回合，还剩 ${n} 回合。`,unlimited:'无限畅玩',pictures:'无限畅玩 + 图片',period:'/ 月',uCopy:'无限故事回合、存档和 WaveNet 语音。',pCopy:'包含无限畅玩的全部功能，并为每个游戏回合生成场景图片。',chooseU:'选择无限畅玩',chooseP:'选择图片方案',current:'当前方案',manage:'管理或取消订阅',foot:'每月自动续订，可随时取消。每个游戏回合最多生成一张图片。'},
+  korea:{kicker:'여정을 선택하세요',title:'당신의 인생을 계속하세요',free:n=>`무료 버전은 20턴이며, ${n}턴 남았습니다.`,unlimited:'무제한',pictures:'무제한 + 그림',period:'/ 월',uCopy:'스토리 턴, 저장된 인생, WaveNet 음성을 무제한으로 이용합니다.',pCopy:'무제한의 모든 기능과 매 게임 턴마다 생성되는 장면 그림을 포함합니다.',chooseU:'무제한 선택',chooseP:'그림 플랜 선택',current:'현재 플랜',manage:'구독 관리 또는 취소',foot:'매월 자동 결제되며 언제든 취소할 수 있습니다. 그림은 게임 턴당 한 장으로 제한됩니다.'}
+};
+
+function billingCopy(){ return BILLING_COPY[S.country]||BILLING_COPY.japan; }
+function renderPlanUI(){
+  const c=billingCopy();
+  $('plans-kicker').textContent=c.kicker; $('plans-title').textContent=c.title;
+  $('plans-status').textContent=CURRENT_PLAN.unlimited
+    ? `${CURRENT_PLAN.plan==='pictures'?c.pictures:c.unlimited} · ${CURRENT_PLAN.status}`
+    : c.free(CURRENT_PLAN.remaining??20);
+  $('unlimited-name').textContent=c.unlimited; $('pictures-name').textContent=c.pictures;
+  $('unlimited-period').textContent=c.period; $('pictures-period').textContent=c.period;
+  $('unlimited-copy').textContent=c.uCopy; $('pictures-copy').textContent=c.pCopy;
+  $('buy-unlimited').textContent=CURRENT_PLAN.plan==='unlimited'?c.current:c.chooseU;
+  $('buy-pictures').textContent=CURRENT_PLAN.plan==='pictures'?c.current:c.chooseP;
+  $('buy-unlimited').disabled=CURRENT_PLAN.plan==='unlimited'||!CURRENT_PLAN.billingConfigured;
+  $('buy-pictures').disabled=CURRENT_PLAN.plan==='pictures'||!CURRENT_PLAN.billingConfigured;
+  $('manage-billing').textContent=c.manage;
+  $('manage-billing').style.display=CURRENT_PLAN.canManageBilling?'block':'none';
+  $('plans-foot').textContent=c.foot;
+  const badge=CURRENT_PLAN.unlimited
+    ? (CURRENT_PLAN.pictures?'PICTURES':'UNLIMITED')
+    : `FREE · ${CURRENT_PLAN.remaining??20}`;
+  $('sb-plan').textContent=badge;
+}
+async function refreshPlan(){
+  try{
+    const r=await fetch('/api/plan',{credentials:'same-origin'});
+    if(r.ok) CURRENT_PLAN=await r.json();
+  }catch(e){}
+  renderPlanUI();
+}
+function openPlans(){ renderPlanUI(); $('plans').classList.remove('hide'); }
+function closePlans(){ $('plans').classList.add('hide'); }
+async function startCheckout(plan){
+  if(!CURRENT_USER){
+    pendingCheckoutPlan=plan; closePlans(); openAuth($('game').classList.contains('on')); return;
+  }
+  const button=plan==='pictures'?$('buy-pictures'):$('buy-unlimited');
+  button.disabled=true;
+  try{
+    const r=await fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({plan})});
+    const d=await r.json();
+    if(r.status===409 && d.code==='SUBSCRIPTION_EXISTS'){ await openBillingPortal(); return; }
+    if(!r.ok||!d.url) throw new Error(d.error||'Checkout is unavailable.');
+    location.href=d.url;
+  }catch(e){
+    alert(e.message||'Checkout is unavailable.'); button.disabled=false;
+  }
+}
+async function openBillingPortal(){
+  try{
+    const r=await fetch('/api/portal',{method:'POST',credentials:'same-origin'});
+    const d=await r.json();
+    if(!r.ok||!d.url) throw new Error(d.error||'Billing settings are unavailable.');
+    location.href=d.url;
+  }catch(e){ alert(e.message||'Billing settings are unavailable.'); }
+}
+$('open-plans').onclick=openPlans;
+$('sb-plan').onclick=openPlans;
+$('plans-close').onclick=closePlans;
+document.querySelector('#plans .plans-backdrop').onclick=closePlans;
+$('buy-unlimited').onclick=()=>startCheckout('unlimited');
+$('buy-pictures').onclick=()=>startCheckout('pictures');
+$('manage-billing').onclick=openBillingPortal;
 
 function openAuth(fromMidGame){
   midGameAuth=!!fromMidGame;
@@ -809,6 +939,11 @@ async function afterLogin(username){
   } else {
     await checkForSave();
   }
+  await refreshPlan();
+  if(pendingCheckoutPlan){
+    const plan=pendingCheckoutPlan; pendingCheckoutPlan=null;
+    await startCheckout(plan);
+  }
 }
 async function doLogout(){
   if(!confirm('Log out?')) return;
@@ -827,12 +962,14 @@ function updateIdentityUI(){
   }
   const link=$('identity-action');
   if(link) link.onclick=(e)=>{ e.preventDefault(); CURRENT_USER ? doLogout() : openAuth(false); };
+  renderPlanUI();
 }
 async function initIdentity(){
   try{
     const r = await fetch('/api/me', {credentials:'same-origin'});
     if(r.ok){ const d=await r.json(); CURRENT_USER=d.username; }
   }catch(e){ /* no session — playing as guest, which is the default */ }
+  await refreshPlan();
   updateIdentityUI();
   await checkForSave();
 }
@@ -842,7 +979,7 @@ async function saveGame(){
   const payload = {
     name:S.name, country:S.country, level:S.level, hardcore:S.hardcore, state:S.state, vocab:S.vocab,
     history:S.history, stamps:S.stamps, streamHTML: stream.innerHTML,
-    turnCount:S.turnCount||0, signupPrompted:!!S.signupPrompted, summary:S.summary||'',
+    turnCount:S.turnCount||0, signupPrompted:!!S.signupPrompted, summary:S.summary||'', awaitingAction:!!S.awaitingAction,
     savedAt: Date.now()
   };
   if(CURRENT_USER){
@@ -907,7 +1044,7 @@ function resumeGame(save,lifeId){
   S.name=save.name; S.country=save.country||'japan'; S.level=save.level; S.hardcore=!!save.hardcore; S.state=save.state; S.vocab=save.vocab||[];
   applyLocale();
   S.history=save.history||[]; S.stamps=save.stamps||[];
-  S.turnCount=save.turnCount||0; S.signupPrompted=!!save.signupPrompted; S.summary=save.summary||'';
+  S.turnCount=save.turnCount||0; S.signupPrompted=!!save.signupPrompted; S.summary=save.summary||''; S.awaitingAction=!!save.awaitingAction;
   $('setup').classList.add('hide');
   $('game').classList.add('on');
   $('statusbar').classList.remove('hide');
@@ -919,13 +1056,15 @@ function resumeGame(save,lifeId){
     h.style.animation='none'; h.textContent=label;
     $('stamps').appendChild(h);
   });
-  renderCard(); scrollDown(true); $('say').focus();
+  updateInputPrompt(); renderCard(); scrollDown(true); $('say').focus();
 }
 initIdentity();
 
 async function start(){
   S.name = $('name-input').value.trim() || 'Traveler';
   S.lifeId=null;
+  S.awaitingAction=false;
+  updateInputPrompt();
   $('begin-btn').disabled = true; $('begin-btn').textContent='着陸中…';
   $('setup').classList.add('hide');
   $('game').classList.add('on');
@@ -1000,12 +1139,16 @@ async function turn(playerText, directive){
 
   const spendNote = S.hintSpend ? `\nNOTE: the player paid ¥${S.hintSpend} for phrase hints (already deducted in CURRENT STATE — carry the yen figure forward, do not re-deduct).` : '';
   S.hintSpend = 0;
-  const userMsg = directive ? directive :
+  const userMsg = directive ? directive : S.awaitingAction ?
+`CURRENT STATE: ${JSON.stringify(S.state)}${spendNote}
+PLAYER ACTION: "${playerText}"
+Take this exactly as a physical action, not dialogue. Respond per the rules and continue ongoing arcs from flags/relationships.` :
 `CURRENT STATE: ${JSON.stringify(S.state)}${spendNote}
 PLAYER SAYS: "${playerText}"
 Respond per the rules. Remember the language gate and continue ongoing arcs from flags/relationships.`;
 
   const msgs = [...S.history, {role:'user', content:userMsg}];
+  const imageTurnNumber = playerText===null ? 0 : (S.turnCount||0)+1;
 
   /* live DOM scaffolding — built incrementally as revealed text grows */
   let entry=null, narrDiv=null, sceneWrap=null;
@@ -1017,9 +1160,10 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
     if(entry) return;
     removeThink();
     entry=document.createElement('div'); entry.className='entry';
-    // Scene image generation is disabled.
-    // sceneWrap=document.createElement('div'); sceneWrap.className='scene-img loading';
-    // entry.appendChild(sceneWrap);
+    if(CURRENT_PLAN.pictures && S.lifeId){
+      sceneWrap=document.createElement('div'); sceneWrap.className='scene-img loading';
+      entry.appendChild(sceneWrap);
+    }
     narrDiv=document.createElement('div'); narrDiv.className='narr live';
     entry.appendChild(narrDiv);
     stream.appendChild(entry);
@@ -1078,7 +1222,7 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
     if(sections.SCENE!==undefined && sections.STATE!==undefined){
       sceneImageStarted=true;
       if(sections.SCENE.toUpperCase()==='NONE') sceneWrap.remove();
-      else attachSceneImage(sceneWrap, sections.SCENE);
+      else attachSceneImage(sceneWrap, sections.SCENE, imageTurnNumber);
     }
   }
   function scheduleRender(){
@@ -1107,14 +1251,30 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
        chunk calls scheduleRender() again */
   }
 
-  let streamOk=false, authExpired=false;
+  let streamOk=false, authExpired=false, turnLimitReached=false;
   try{
     const r = await fetch(API_ENDPOINT,{
       method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin',
       body:JSON.stringify({system:SYSTEM(), messages:msgs})
     });
     if(r.status===401){ authExpired=true; throw new Error('session expired'); }
+    if(r.status===402){
+      const d=await r.json().catch(()=>({}));
+      if(d.code==='TURN_LIMIT'){
+        turnLimitReached=true; CURRENT_PLAN.remaining=0; renderPlanUI(); openPlans();
+        throw new Error('free turn limit reached');
+      }
+    }
     if(!r.ok || !r.body) throw new Error('bad response');
+    const remaining=r.headers.get('x-jinsei-remaining');
+    const serverPlan=r.headers.get('x-jinsei-plan');
+    if(serverPlan){
+      CURRENT_PLAN.plan=serverPlan;
+      CURRENT_PLAN.unlimited=serverPlan!=='free';
+      CURRENT_PLAN.pictures=serverPlan==='pictures';
+      CURRENT_PLAN.remaining=remaining==='unlimited'?null:Number(remaining);
+      renderPlanUI();
+    }
     const reader = r.body.getReader();
     const decoder = new TextDecoder();
     let lineBuf='';
@@ -1152,6 +1312,13 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
   removeThink();
 
   if(!streamOk){
+    if(turnLimitReached){
+      const d=document.createElement('div');
+      d.className='feedback miss';
+      d.innerHTML='<span class="fb-mark">20 TURN LIMIT</span>The free journey ends here. Choose a monthly plan to continue this life.';
+      stream.appendChild(d); scrollDown(true);
+      S.busy=false; $('send').disabled=false; return;
+    }
     const d=document.createElement('div');
     d.className='feedback miss';
     if(authExpired){
@@ -1175,7 +1342,7 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
   finalizeTurn(sections, playerText!==null);
   if(!sceneImageStarted){
     if(sceneWrap && sections.SCENE && sections.SCENE.toUpperCase()!=='NONE'){
-      attachSceneImage(sceneWrap, sections.SCENE);
+      attachSceneImage(sceneWrap, sections.SCENE, imageTurnNumber);
     } else if(sceneWrap){
       sceneWrap.remove(); /* stream was cut short before a usable SCENE ever arrived */
     }
@@ -1198,14 +1365,12 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
   S.busy=false; $('send').disabled=false;
 }
 
-/* ================= SCENE IMAGE (disabled) =================
-async function attachSceneImage(entry, prompt){
-  const wrap=document.createElement('div'); wrap.className='scene-img loading';
-  entry.insertBefore(wrap, entry.firstChild);
+/* ================= PAID SCENE IMAGE ================= */
+async function attachSceneImage(wrap, prompt, turnNumber){
   try{
     const r = await fetch('/api/image', {
       method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin',
-      body: JSON.stringify({ prompt })
+      body: JSON.stringify({ prompt, lifeId:S.lifeId, turnNumber })
     });
     if(!r.ok) throw new Error('image request failed');
     const d = await r.json();
@@ -1214,7 +1379,7 @@ async function attachSceneImage(entry, prompt){
     img.onload=()=>{
       wrap.classList.remove('loading');
       wrap.appendChild(img);
-      scrollDown();
+      scrollDown(); saveGame();
     };
     img.onerror=()=>{ wrap.remove(); };
     img.src=d.url;
@@ -1223,7 +1388,6 @@ async function attachSceneImage(entry, prompt){
     wrap.remove(); // no image this turn — game continues unaffected
   }
 }
-===================================================================== */
 
 /* ================= SECTION PARSING ================= */
 function parseSections(buf){
@@ -1254,6 +1418,9 @@ function parseFeedbackBlock(text){
 
 /* ================= FINALIZE (structured data, arrives after prose) ================= */
 function finalizeTurn(sections, hadPlayerTurn){
+  const hasNpc=Boolean(sections.NPC && parseNpc(sections.NPC).jp);
+  S.awaitingAction=!hasNpc;
+  updateInputPrompt();
   if(hadPlayerTurn && sections.FEEDBACK){
     const fb=parseFeedbackBlock(sections.FEEDBACK);
     if(fb.understood && fb.understood!=='none'){
