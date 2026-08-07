@@ -33,7 +33,7 @@ PADDLE_WEBHOOK_SECRET=pdl_ntfset_your-webhook-secret
 PADDLE_PRICE_UNLIMITED=pri_your_499_monthly_price
 PADDLE_PRICE_PICTURES=pri_your_999_monthly_price
 REPLICATE_API_TOKEN=r8_your-replicate-token
-SUPABASE_URL=https://jotioxgrharwfndnxoir.supabase.co
+SUPABASE_URL=https://quchuvmccwtbrnhxdbig.supabase.co
 SUPABASE_SECRET_KEY=sb_secret_your-secret-key-here
 ```
 
