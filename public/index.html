@@ -23,6 +23,28 @@
   --body:'Zen Kaku Gothic New','Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
   --mono:'IBM Plex Mono',monospace;
 }
+html[data-theme="china"]{
+  --paper:#F7EFE1;
+  --paper-deep:#E9D7C6;
+  --ink:#321C19;
+  --ink-soft:#71544B;
+  --ai:#A92E27;
+  --ai-soft:#F2D8D1;
+  --shu:#C83B2E;
+  --line:#C9A99C;
+  --ok:#6F5730;
+}
+html[data-theme="korea"]{
+  --paper:#F0F2E9;
+  --paper-deep:#DDE4D7;
+  --ink:#1F2C22;
+  --ink-soft:#526354;
+  --ai:#2F684D;
+  --ai-soft:#D6E5D9;
+  --shu:#A83D32;
+  --line:#AFC1B1;
+  --ok:#2F684D;
+}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
 body{
@@ -654,6 +676,7 @@ function updateDestinationUI(){
 function applyLocale(){
   const l=locale();
   document.documentElement.lang=S.country==='china'?'zh-CN':S.country==='korea'?'ko':'ja';
+  document.documentElement.dataset.theme=S.country;
   document.querySelectorAll('.sb-brand,.brand').forEach(el=>{ el.childNodes[0].nodeValue=l.brand; });
   $('destination-label').textContent=l.destination; $('begin-btn').textContent=l.play; $('setup-note').textContent=l.note;
   $('send').textContent=l.speak; $('cardtoggle').textContent=l.card; $('dock-hint').textContent=l.hint;
