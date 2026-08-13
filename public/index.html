@@ -815,12 +815,30 @@ function stateCurrencyAmount(state){
   }
   return null;
 }
+function normalizeAppearanceProfiles(next,previous={}){
+  const incoming=next&&typeof next==='object'&&!Array.isArray(next)?next:{};
+  const prior=previous&&typeof previous==='object'&&!Array.isArray(previous)?previous:{};
+  const merged={...prior};
+  Object.entries(incoming).forEach(([name,profile])=>{
+    if(!name.trim()) return;
+    const old=prior[name]&&typeof prior[name]==='object'&&!Array.isArray(prior[name])?prior[name]:{};
+    if(typeof profile==='string'){
+      if(Object.keys(old).length) merged[name]={...old,legacyDescription:profile};
+      else merged[name]={face:profile,height:'',hair:'',personality:'',clothing:[]};
+      return;
+    }
+    if(!profile||typeof profile!=='object'||Array.isArray(profile)) return;
+    const clothing=Array.isArray(profile.clothing)&&profile.clothing.length
+      ? profile.clothing
+      : (Array.isArray(old.clothing)?old.clothing:[]);
+    merged[name]={...old,...profile,clothing};
+  });
+  return merged;
+}
 function normalizeCurrencyState(next,previous=null){
   const state=next&&typeof next==='object'&&!Array.isArray(next)?next:{};
   const amount=stateCurrencyAmount(state)??stateCurrencyAmount(previous)??destination().cash;
-  const appearances=state.appearances&&typeof state.appearances==='object'&&!Array.isArray(state.appearances)
-    ? state.appearances
-    : (previous?.appearances&&typeof previous.appearances==='object'?previous.appearances:{});
+  const appearances=normalizeAppearanceProfiles(state.appearances,previous?.appearances);
   return {...state,yen:Math.round(amount),appearances};
 }
 function formatStateCurrency(state,destinationData=destination()){
@@ -857,6 +875,7 @@ const SYSTEM = () => `You are the game engine of 人生 (JINSEI), a slice-of-lif
 
 ${S.summary ? `STORY SO FAR (a running summary of everything that happened before the recent messages below — the recent message history is truncated to save space, so THIS is your memory of earlier events; treat it as canon and keep continuity with it):\n${S.summary}\n` : ''}
 CORE RULE — THE LANGUAGE GATE: The player must communicate in ${destination().language} (${destination().romanization} input is fine and should be read as ${destination().language}) to accomplish anything. If they write in English, NPCs respond with polite confusion in the local language and the situation does not advance — except rare NPCs who plausibly know some English, who may help a little but push the player toward ${destination().language}. Never let English fully succeed.
+${S.country==='japan' ? `JAPANESE SCRIPT RULE — mandatory: Every JP field must be written in natural Japanese script and contain hiragana, katakana, or kanji. JP must NEVER be Latin-letter rōmaji. ROMAJI is the only field that may contain the Latin-letter reading. Before finishing, verify JP and ROMAJI are not duplicates in Latin script.` : ''}
 ${hanjaTeachingRules()}
 
 ACTIONS: Text wrapped in asterisks is a physical action, not speech — e.g. *wait*, *point at the menu*, *bow*, *hand over money*. Actions may be written in English; they bypass the language gate because they are non-verbal. Gesturing can get simple things done, but anything requiring words — jobs, friendships, paperwork, romance — still demands spoken ${destination().language}. When a turn is action-only, FEEDBACK should be UNDERSTOOD: none, not a language judgment. When the incoming message is labelled PLAYER ACTION, it is definitely an action even if it has no asterisks; take whatever the player typed as the action and do not apply the language gate to it.
@@ -874,10 +893,12 @@ STORY RULES:
 - When nobody is speaking to the player, OMIT @@NPC@@. If a specific, natural next action is available or required, do not perform it: end @@NARRATION@@ by asking, "Would you like to [specific action]? Type yes, no, or what you want to do." If there is no clear action to propose, end with: "What do you want to do? Type what you want to do." These are action prompts, not dialogue.
 
 IMAGE CHARACTER CONTINUITY:
-- People may appear naturally in @@SCENE@@ when physically present. Do not force a person into every image.
-- STATE.appearances is the authoritative visual identity record. Each key is a character name (including ${S.name} if the player is shown); each value is a compact 12-20 word description covering approximate age, hair, face, build, and one signature clothing detail or color.
-- The first time a named person appears in an image prompt, establish their description in STATE.appearances. On every later appearance, reuse those same traits and wording closely. Never silently change age, hair, facial features, build, or signature color.
-- Keep at most 8 recurring appearance records. Never use a real public figure or celebrity as a visual reference.
+- Include at least one attractive adult who is naturally present in the current scene. Make that person a prominent principal subject—not a tiny, distant, obscured, or incidental background figure—and frame their face and body clearly enough to establish their identity. Partial nudity is allowed for adults when natural to the scene; never include nudity involving minors.
+- STATE.appearances is the permanent character-profile registry. Create an entry immediately for EVERY named person introduced in the story, including ${S.name}; do this whether or not that person appears in the current image. Never delete an existing entry.
+- Every profile must be an object with detailed face, height, hair, personality, and clothing fields. Face must describe apparent age, face shape, skin tone, eyes, brows, nose, mouth, and distinguishing features. Height must give an approximate measurement and build/posture. Hair must give color, length, texture, and style. Personality must record stable traits and mannerisms.
+- Clothing must be an array enumerating every article worn in the person's current outfit, with at least 5 entries. Each entry must name the article, exact color, material/cut/pattern, and distinctive details. Include layers, bottoms, footwear, and visible accessories; never collapse an outfit into phrases such as "casual clothes." Update clothing only when the story actually establishes that the person changed clothes, while preserving face, height, hair, and personality.
+- On every later appearance, reuse the stored physical traits and current clothing closely. Never silently change or omit identity details. When a profile from an older save is incomplete or a legacy string, expand it into the full structured format on the next turn.
+- Never use a real public figure or celebrity as a visual reference.
 
 SURVIVAL — HUNGER, HEALTH, DEATH: This life has real stakes. Track "hunger" and "health" (0-100 each) in STATE every turn.
 - Hunger drains steadily with time (roughly ${S.hardcore ? '15-30' : '10-20'} per skipped meal or half-day of neglect). Eating a real meal restores it substantially (40-70); a small snack helps a little (15-25).
@@ -907,9 +928,9 @@ BETTER: (improved ${destination().language} with ${destination().romanization} i
 @@SUGGESTIONS@@
 (2-3 short ${destination().romanization} phrases the player might try next, one per line)
 @@SCENE@@
-(one vivid 70-100 word prompt for the CURRENT scene. State the composition, place, time, light, weather, objects, textures, and mood. Include people who are naturally present and what they are doing. For every named recurring person shown, repeat their stable STATE.appearances description closely; establish it here and in STATE if new. Keep ethnicity and local details appropriate to ${destination().country}. Do not include dialogue, captions, signs with invented text, celebrities, or contradictory appearance details.)
+(one vivid 70-100 word prompt for the CURRENT scene. State the composition, place, time, light, weather, objects, textures, and mood. Include an attractive adult as a prominent principal subject, clearly visible in the foreground or middle ground, and describe what they are doing. Tasteful, non-explicit partial nudity is allowed for adults when natural to the scene; never include explicit sexual content, sexualized nudity, or any nudity involving minors. For every named person shown, repeat their stored face, height, hair, and ALL current clothing articles, colors, and details from STATE.appearances. Establish a complete profile here and in STATE if new. Keep ethnicity and local details appropriate to ${destination().country}. Do not include dialogue, captions, signs with invented text, celebrities, or contradictory appearance details.)
 @@STATE@@
-(one single-line JSON object, no line breaks inside it: {"day":int,"time":"morning|afternoon|evening|night","location":"short place name","yen":int,"hunger":0-100,"health":0-100,"alive":true|false,"job":"job title or null","visa":"visa status","relationships":[{"name":"...","role":"...","level":1-5}],"appearances":{"character name":"stable 12-20 word visual description, max 8 people"},"flags":["short plot memory strings, max 10"]})
+(one single-line JSON object, no line breaks inside it: {"day":int,"time":"morning|afternoon|evening|night","location":"short place name","yen":int,"hunger":0-100,"health":0-100,"alive":true|false,"job":"job title or null","visa":"visa status","relationships":[{"name":"...","role":"...","level":1-5}],"appearances":{"character name":{"face":"apparent age, shape, skin, eyes, brows, nose, mouth, distinguishing features","height":"approximate measurement, build, posture","hair":"color, length, texture, style","personality":"stable traits and mannerisms","clothing":[{"article":"specific garment/accessory","color":"precise color","details":"material, cut, pattern, condition, distinctive features"}]}},"flags":["short plot memory strings, max 10"]}. Every person profile needs at least 5 clothing entries. Copy forward every existing person and every established detail.)
 @@MILESTONE@@
 (CAPS LABEL or NONE)
 @@SUMMARY@@
@@ -1483,7 +1504,9 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
       ensureNpcBlock();
       const p = parseNpc(sections.NPC);
       npcWho.textContent = p.name || '…';
-      npcJp.textContent = p.jp || '';
+      const jpText=p.jp||'';
+      npcJp.dataset.rawJp=jpText;
+      npcJp.textContent = S.country==='japan' && jpText && !hasJapaneseScript(jpText) ? '' : jpText;
       npcRomaji.textContent = p.romaji || '';
       npcEn.textContent = p.en || '';
     }
@@ -1634,7 +1657,12 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
   sections = parseSections(buf);
   updateLive();
   if(narrDiv) narrDiv.classList.remove('live');
-  if(npcJp){ npcJp.classList.remove('live'); enableDictionaryText(npcJp,npcJp.textContent); }
+  if(npcJp){
+    npcJp.classList.remove('live');
+    const jpText=await ensureJapaneseScript(npcJp.dataset.rawJp||npcJp.textContent);
+    delete npcJp.dataset.rawJp;
+    enableDictionaryText(npcJp,jpText);
+  }
 
   finalizeTurn(sections, playerText!==null);
   if(!sceneImageStarted){
@@ -1707,6 +1735,19 @@ function parseField(text,label){
 function parseNpc(text){
   return { name:parseField(text,'NAME'), jp:parseField(text,'JP'),
            romaji:parseField(text,'ROMAJI'), en:parseField(text,'EN') };
+}
+function hasJapaneseScript(text){
+  return /[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u.test(text||'');
+}
+async function ensureJapaneseScript(text){
+  const value=String(text||'').trim();
+  if(S.country!=='japan'||!value||hasJapaneseScript(value)) return value;
+  try{
+    const r=await fetch(`/api/kana?text=${encodeURIComponent(value)}`);
+    if(!r.ok) return value;
+    const data=await r.json();
+    return data.kana&&hasJapaneseScript(data.kana)?data.kana:value;
+  }catch(e){ return value; }
 }
 function parseFeedbackBlock(text){
   return { understood:(parseField(text,'UNDERSTOOD')||'none').toLowerCase(),

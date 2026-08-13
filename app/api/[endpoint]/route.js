@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { toKana } from 'wanakana';
 import {
   bcrypt,
   COOKIE_NAME,
@@ -245,8 +246,9 @@ async function generateSceneImage(request, user) {
   const imageLocales = { japan: 'Japan', china: 'China', korea: 'South Korea', hanja: 'South Korea' };
   const imageLocale = imageLocales[country];
   if (!imageLocale) return json({ error: 'A valid country is required.' }, 400);
-  const scenePrompt = prompt.trim().split(/\s+/).slice(0, 110).join(' ');
-  const imagePrompt = `${imageLocale}: ${scenePrompt}`.slice(0, 1000);
+  const scenePrompt = prompt.trim().split(/\s+/).slice(0, 100).join(' ');
+  const portraitDirection = ' Include an attractive adult as a prominent principal subject, clearly visible in the foreground or middle ground. Tasteful, non-explicit partial nudity is allowed for adults when natural to the scene; never include explicit sexual content, sexualized nudity, or any nudity involving minors.';
+  const imagePrompt = `${imageLocale}: ${scenePrompt}${portraitDirection}`.slice(0, 1000);
   if (typeof lifeId !== 'string' || !/^[0-9a-f-]{36}$/i.test(lifeId)) return json({ error: 'A valid life id is required.' }, 400);
   if (!Number.isInteger(turnNumber) || turnNumber < 0) return json({ error: 'A valid turn number is required.' }, 400);
   const imageSeed = parseInt(createHash('sha256').update(lifeId).digest('hex').slice(0, 8), 16);
@@ -438,6 +440,18 @@ async function synthesizeSpeech(request) {
 
 export async function GET(request, context) {
   const name = await endpoint(context);
+
+  if (name === 'kana') {
+    const text = new URL(request.url).searchParams.get('text');
+    if (typeof text !== 'string' || !text.trim() || text.length > 500) return json({ error: 'Enter a valid Japanese line.' }, 400);
+    const normalizedRomaji = text.trim().toLowerCase()
+      .replace(/\bkonnichiwa\b/g, 'konnichiha')
+      .replace(/\bkonbanwa\b/g, 'konbanha')
+      .replace(/\bwa\b/g, 'ha')
+      .replace(/\be\b/g, 'he')
+      .replace(/\bo\b/g, 'wo');
+    return json({ kana: toKana(normalizedRomaji) });
+  }
 
   if (name === 'dictionary') {
     const url = new URL(request.url);
