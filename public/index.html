@@ -76,7 +76,7 @@ input{font-family:inherit}
 .sb-val.yen{color:#E8D9A8}
 .sb-val.warn{color:#E8B84B}
 .sb-val.crit{color:#FF8B7A}
-.sb-brand{font-family:var(--disp);font-weight:800;font-size:14px;letter-spacing:.1em;margin-right:auto;padding-right:16px}
+.sb-brand{font-family:var(--disp);font-weight:800;font-size:14px;letter-spacing:.1em;margin-right:auto;padding-right:16px;color:inherit;text-decoration:none}
 .sb-hc-badge{
   display:inline-block;margin-left:8px;font-family:var(--mono);font-weight:500;font-size:9px;
   letter-spacing:.14em;color:var(--shu);border:1px solid var(--shu);padding:1px 6px;
@@ -135,6 +135,14 @@ input{font-family:inherit}
 #begin-btn:hover{background:var(--ai)}
 #begin-btn:disabled{opacity:.5;cursor:wait}
 .setup-note{font-size:12px;color:var(--ink-soft);margin-top:14px;text-align:center}
+.save-skeleton{display:flex;gap:7px;height:42px}
+.save-skeleton-card,.save-skeleton-delete{position:relative;overflow:hidden;background:var(--paper-deep);border:1px solid var(--line)}
+.save-skeleton-card{flex:1;padding:10px 12px}
+.save-skeleton-delete{width:34px;flex:none}
+.save-skeleton-line{display:block;height:8px;width:72%;background:rgba(90,83,71,.14);margin-bottom:7px}
+.save-skeleton-line.short{width:42%;margin-bottom:0}
+.save-skeleton-card::after,.save-skeleton-delete::after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.48),transparent);animation:save-shimmer 1.25s infinite}
+@keyframes save-shimmer{100%{transform:translateX(100%)}}
 
 /* ============ AUTH MODAL (usable pre-game or mid-game) ============ */
 #auth{
@@ -243,7 +251,7 @@ header{
   display:flex;align-items:baseline;gap:14px;padding:12px 22px;
   border-bottom:1px solid var(--line);flex-wrap:wrap;
 }
-.brand{font-family:var(--disp);font-weight:800;font-size:20px;letter-spacing:.08em}
+.brand{font-family:var(--disp);font-weight:800;font-size:20px;letter-spacing:.08em;color:inherit;text-decoration:none}
 #hud{font-family:var(--mono);font-size:12px;color:var(--ink-soft);letter-spacing:.06em}
 #hud b{color:var(--ink);font-weight:500}
 
@@ -451,19 +459,39 @@ aside{
   #game.show-card main{display:none}
   #game.show-card aside{display:flex}
   .cardtoggle{display:inline-block !important}
+  #game.show-card .mobile-story-back{display:block}
 }
-@media (max-width:620px){#destinations{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:620px){
+  #destinations{grid-template-columns:repeat(2,1fr)}
+  #statusbar{height:38px;padding:0 4px;overflow:hidden}
+  #game{height:calc(100vh - 38px);height:calc(100dvh - 38px);margin-top:38px}
+  .sb-brand{flex:0 0 auto;margin:0;padding:0 6px 0 3px;font-size:12px;letter-spacing:.04em}
+  .sb-hc-badge{display:none !important}
+  .sb-item{flex:1 1 0;min-width:0;height:100%;padding:3px 2px;gap:0;flex-direction:column;justify-content:center;text-align:center}
+  .sb-label{display:block;width:100%;overflow:hidden;text-overflow:ellipsis;font-size:6.5px;line-height:1.1;letter-spacing:.04em;white-space:nowrap}
+  .sb-val{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;font-size:9px;line-height:1.25;white-space:nowrap}
+  .sb-save,.sb-plan,.sb-home,.sb-logout{display:none}
+  header{padding:6px 10px;gap:7px;flex-wrap:nowrap;align-items:center;min-height:34px}
+  .brand{font-size:15px;line-height:1;letter-spacing:.04em}
+  #hud{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;line-height:1.2}
+  .cardtoggle{flex:0 0 auto;margin-left:auto;padding:2px 6px;font-size:9px;white-space:nowrap}
+}
 .cardtoggle{
   display:none;margin-left:auto;background:none;border:1px solid var(--line);
   font-family:var(--mono);font-size:11px;padding:3px 10px;color:var(--ink-soft);
 }
+.mobile-story-back{
+  display:none;align-self:flex-start;margin:0 0 12px;background:none;border:1px solid var(--line);
+  color:var(--ink-soft);font-family:var(--mono);font-size:11px;padding:6px 10px;
+}
+.mobile-story-back:hover{border-color:var(--ai);color:var(--ai)}
 </style>
 </head>
 <body>
 
 <!-- ================= FIXED STATUS BAR ================= -->
 <div id="statusbar" class="hide">
-  <span class="sb-brand">人生<span class="sb-hc-badge hide" id="sb-hc-badge">鬼畜</span></span>
+  <a class="sb-brand" href="/" aria-label="Back to main page">人生<span class="sb-hc-badge hide" id="sb-hc-badge">鬼畜</span></a>
   <span class="sb-item"><span class="sb-label" id="label-day">Day</span><span class="sb-val" id="sb-day">—</span></span>
   <span class="sb-item"><span class="sb-label" id="label-time">Time</span><span class="sb-val" id="sb-time">—</span></span>
   <span class="sb-item"><span class="sb-label" id="label-hunger">腹 Hunger</span><span class="sb-val" id="sb-hunger">—</span></span>
@@ -567,9 +595,12 @@ aside{
     Choose where to begin. Find work. Find a home. Find people. The life you build is made of the words you can say.
   </p>
   <div class="setup-card" id="setup-card">
-    <div id="continue-block" style="display:none;margin-bottom:22px;padding-bottom:20px;border-bottom:1px dashed var(--line)">
+    <div id="continue-block" aria-busy="true" style="display:block;margin-bottom:22px;padding-bottom:20px;border-bottom:1px dashed var(--line)">
       <span class="field-label">Your saved lives · 続きから</span>
-      <div id="lives-list" style="display:grid;gap:8px"></div>
+      <div id="lives-list" style="display:grid;gap:8px">
+        <div class="save-skeleton" aria-hidden="true"><div class="save-skeleton-card"><span class="save-skeleton-line"></span><span class="save-skeleton-line short"></span></div><div class="save-skeleton-delete"></div></div>
+        <div class="save-skeleton" aria-hidden="true"><div class="save-skeleton-card"><span class="save-skeleton-line"></span><span class="save-skeleton-line short"></span></div><div class="save-skeleton-delete"></div></div>
+      </div>
     </div>
     <label class="field-label" for="name-input">Your name / 名前</label>
     <input id="name-input" placeholder="e.g. Miara" maxlength="24" autocomplete="off">
@@ -609,7 +640,7 @@ aside{
 <div id="game">
   <main>
     <header>
-      <span class="brand">人生</span>
+      <a class="brand" href="/" aria-label="Back to main page">人生</a>
       <span id="hud"></span>
       <button class="cardtoggle" id="cardtoggle">在留カード</button>
     </header>
@@ -630,6 +661,7 @@ aside{
   </main>
 
   <aside id="sidebar">
+    <button class="mobile-story-back" id="mobile-story-back" type="button">← Back to story</button>
     <div id="sidebar-default">
     <div class="card">
       <div class="card-head"><span class="t" id="card-title">在留カード</span><span class="g" id="card-country">RESIDENCE CARD · 日本国</span></div>
@@ -782,6 +814,8 @@ CORE RULE — THE LANGUAGE GATE: The player must communicate in ${destination().
 ${hanjaTeachingRules()}
 
 ACTIONS: Text wrapped in asterisks is a physical action, not speech — e.g. *wait*, *point at the menu*, *bow*, *hand over money*. Actions may be written in English; they bypass the language gate because they are non-verbal. Gesturing can get simple things done, but anything requiring words — jobs, friendships, paperwork, romance — still demands spoken ${destination().language}. When a turn is action-only, FEEDBACK should be UNDERSTOOD: none, not a language judgment. When the incoming message is labelled PLAYER ACTION, it is definitely an action even if it has no asterisks; take whatever the player typed as the action and do not apply the language gate to it.
+- Never choose or perform an intentional action for the player. You control the world and NPCs, but the player controls their own body and decisions.
+- If the latest PLAYER ACTION is "yes", "no", or an equivalent short confirmation/refusal, interpret it as the answer to the specific action you proposed in your immediately preceding narration.
 
 STORY RULES:
 - ${S.hardcore ? `Recognizably ${destination().country} — its transit, food, bureaucracy, neighborhoods, and seasons — but tonally unstable: specific and concrete in its details, uncanny and often darkly funny in how those details behave.` : `Grounded, warm, specific. Real neighborhoods, transit, food, city paperwork, seasons, and social customs in ${destination().country}. Small moments matter.`}
@@ -791,7 +825,7 @@ STORY RULES:
 - Teach: NPC lines should be natural for the player's level, and each turn introduce 0-2 genuinely useful words.
 - Judge the player's ${destination().language} in FEEDBACK: UNDERSTOOD yes/partial/no. Give ONE short coaching NOTE and, if helpful, a corrected/improved sentence in BETTER (${destination().language} + ${destination().romanization} in parentheses). Be encouraging, never pedantic. If there is no player utterance to judge, write UNDERSTOOD: none, NOTE: none, BETTER: none.
 - Keep everything SHORT. Narration 2-3 sentences. One NPC line per turn, 1-2 sentences.
-- When nobody is speaking to the player, OMIT @@NPC@@. In that case, append this exact English sentence as the final sentence of @@NARRATION@@: "What do you want to do? Type what you want to do." This is an action prompt, not dialogue.
+- When nobody is speaking to the player, OMIT @@NPC@@. If a specific, natural next action is available or required, do not perform it: end @@NARRATION@@ by asking, "Would you like to [specific action]? Type yes, no, or what you want to do." If there is no clear action to propose, end with: "What do you want to do? Type what you want to do." These are action prompts, not dialogue.
 
 SURVIVAL — HUNGER, HEALTH, DEATH: This life has real stakes. Track "hunger" and "health" (0-100 each) in STATE every turn.
 - Hunger drains steadily with time (roughly ${S.hardcore ? '15-30' : '10-20'} per skipped meal or half-day of neglect). Eating a real meal restores it substantially (40-70); a small snack helps a little (15-25).
@@ -855,7 +889,7 @@ function updateDestinationUI(){
 function updateInputPrompt(){
   const d=destination();
   $('say').placeholder=S.awaitingAction
-    ? 'What do you want to do? Type what you want to do.'
+    ? 'Type yes, no, or what you want to do.'
     : `Speak in ${d.language}… (${d.romanization} OK)`;
 }
 function applyLocale(){
@@ -865,6 +899,7 @@ function applyLocale(){
   document.querySelectorAll('.sb-brand,.brand').forEach(el=>{ el.childNodes[0].nodeValue=l.brand; });
   $('destination-label').textContent=l.destination; $('begin-btn').textContent=l.play; $('setup-note').textContent=l.note;
   $('send').textContent=l.speak; $('cardtoggle').textContent=l.card; $('dock-hint').textContent=l.hint;
+  $('mobile-story-back').textContent=l.back;
   $('card-title').textContent=l.card; $('card-country').textContent=l.country; $('card-government').textContent=l.government;
   ['label-day','label-time','label-hunger','label-health','label-funds'].forEach((id,i)=>$(id).textContent=l.labels[i]);
   ['card-name-label','card-status-label','card-day-label','card-location-label','card-hunger-label','card-health-label','card-work-label','card-funds-label'].forEach((id,i)=>$(id).textContent=l.cardLabels[i]);
@@ -887,6 +922,15 @@ document.querySelectorAll('#world-toggle .level-btn').forEach(b=>{
 });
 $('cardtoggle').onclick=()=>{ $('game').classList.toggle('show-card');
   $('cardtoggle').textContent = $('game').classList.contains('show-card') ? locale().back : locale().card; };
+$('mobile-story-back').onclick=()=>{
+  $('game').classList.remove('show-card');
+  $('cardtoggle').textContent=locale().card;
+};
+
+function enterGameRoute(){
+  if(window.location.pathname!=='/game') window.history.pushState({jinseiGame:true},'', '/game');
+}
+window.addEventListener('popstate',()=>window.location.reload());
 
 function renderVocabReview(){
   const list=$('vocab-review-list');
@@ -1167,6 +1211,11 @@ function flashSaved(){
   flashSaved._t=setTimeout(()=>{el.style.opacity='.45';},900);
 }
 async function checkForSave(){
+  $('continue-block').style.display='block';
+  $('continue-block').setAttribute('aria-busy','true');
+  $('lives-list').innerHTML=`
+    <div class="save-skeleton" aria-hidden="true"><div class="save-skeleton-card"><span class="save-skeleton-line"></span><span class="save-skeleton-line short"></span></div><div class="save-skeleton-delete"></div></div>
+    <div class="save-skeleton" aria-hidden="true"><div class="save-skeleton-card"><span class="save-skeleton-line"></span><span class="save-skeleton-line short"></span></div><div class="save-skeleton-delete"></div></div>`;
   let lives=[];
   if(CURRENT_USER){
     try{
@@ -1180,7 +1229,8 @@ async function checkForSave(){
       else { const legacy=localStorage.getItem(LEGACY_GUEST_SAVE_KEY); if(legacy) lives=[{id:crypto.randomUUID(),data:JSON.parse(legacy)}]; }
     }catch(e){}
   }
-  if(!lives.length){ $('continue-block').style.display='none'; return; }
+  $('continue-block').setAttribute('aria-busy','false');
+  if(!lives.length){ $('continue-block').style.display='none'; $('lives-list').innerHTML=''; return; }
   $('continue-block').style.display='block';
   $('lives-list').innerHTML='';
   lives.forEach(life=>{
@@ -1204,6 +1254,7 @@ function resumeGame(save,lifeId){
   $('setup').classList.add('hide');
   $('game').classList.add('on');
   $('statusbar').classList.remove('hide');
+  enterGameRoute();
   $('sb-hc-badge').classList.toggle('hide', !S.hardcore);
   stream.innerHTML = save.streamHTML || '';
   (S.stamps||[]).forEach(label=>{
@@ -1225,6 +1276,7 @@ async function start(){
   $('setup').classList.add('hide');
   $('game').classList.add('on');
   $('statusbar').classList.remove('hide');
+  enterGameRoute();
   const d=destination();
   const opening=randomStart();
   S.state={ day:1, time:opening.time, location:opening.location, yen:d.cash, hunger:85, health:100, alive:true, job:null, visa:d.visa, relationships:[], flags:[`Opening: ${opening.hook}`] };
