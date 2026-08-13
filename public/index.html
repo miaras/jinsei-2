@@ -892,7 +892,7 @@ BETTER: (improved ${destination().language} with ${destination().romanization} i
 @@SUGGESTIONS@@
 (2-3 short ${destination().romanization} phrases the player might try next, one per line)
 @@SCENE@@
-(one vivid, purely VISUAL sentence describing the CURRENT setting for a text-to-image model — place, light, weather, objects, textures, mood. 12-25 words. ABSOLUTELY NO PEOPLE: no characters, no bodies, no faces, no figures, not even implied ones like "a queue of commuters" or "a crowded platform" — describe the empty space itself. Match the tone already established above.)
+(one concise, purely VISUAL sentence describing the CURRENT setting — place, light, one or two objects, mood. 8-14 words. ABSOLUTELY NO PEOPLE: no characters, bodies, faces, figures, or implied crowds. Describe only the empty space.)
 @@STATE@@
 (one single-line JSON object, no line breaks inside it: {"day":int,"time":"morning|afternoon|evening|night","location":"short place name","yen":int,"hunger":0-100,"health":0-100,"alive":true|false,"job":"job title or null","visa":"visa status","relationships":[{"name":"...","role":"...","level":1-5}],"flags":["short plot memory strings, max 10"]})
 @@MILESTONE@@
@@ -1644,7 +1644,7 @@ async function attachSceneImage(wrap, prompt, turnNumber){
   try{
     const r = await fetch('/api/image', {
       method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin',
-      body: JSON.stringify({ prompt, lifeId:S.lifeId, turnNumber })
+      body: JSON.stringify({ prompt, country:S.country, lifeId:S.lifeId, turnNumber })
     });
     if(!r.ok) throw new Error('image request failed');
     const d = await r.json();

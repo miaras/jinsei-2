@@ -240,8 +240,13 @@ async function generateSceneImage(request, user) {
   const entitlement = await entitlementForUser(user);
   if (!entitlement.pictures) return json({ error: 'The Pictures plan is required.', code: 'PICTURES_PLAN_REQUIRED' }, 402);
   if (!process.env.REPLICATE_API_TOKEN) return json({ error: 'Server is missing REPLICATE_API_TOKEN.' }, 500);
-  const { prompt, lifeId, turnNumber } = await request.json().catch(() => ({}));
+  const { prompt, country, lifeId, turnNumber } = await request.json().catch(() => ({}));
   if (typeof prompt !== 'string' || !prompt.trim() || prompt.length > 1000) return json({ error: 'A valid image prompt is required.' }, 400);
+  const imageLocales = { japan: 'Japan', china: 'China', korea: 'South Korea', hanja: 'South Korea' };
+  const imageLocale = imageLocales[country];
+  if (!imageLocale) return json({ error: 'A valid country is required.' }, 400);
+  const scenePrompt = prompt.trim().split(/\s+/).slice(0, 18).join(' ');
+  const imagePrompt = `${imageLocale}: ${scenePrompt}`.slice(0, 240);
   if (typeof lifeId !== 'string' || !/^[0-9a-f-]{36}$/i.test(lifeId)) return json({ error: 'A valid life id is required.' }, 400);
   if (!Number.isInteger(turnNumber) || turnNumber < 0) return json({ error: 'A valid turn number is required.' }, 400);
 
@@ -253,7 +258,7 @@ async function generateSceneImage(request, user) {
   const savedTurn = Number(life.data?.turnCount || 0);
   if (turnNumber !== savedTurn && turnNumber !== savedTurn + 1) return json({ error: 'That image does not match the current turn.' }, 409);
 
-  const promptHash = createHash('sha256').update(prompt.trim()).digest('hex');
+  const promptHash = createHash('sha256').update(imagePrompt).digest('hex');
   const { data: generation, error: reserveError } = await client.from('jinsei_image_generations')
     .insert({ user_id: user.id, life_id: lifeId, turn_number: turnNumber, prompt_hash: promptHash })
     .select('id').single();
@@ -278,7 +283,7 @@ async function generateSceneImage(request, user) {
       body: JSON.stringify({
         input: {
           num_inference_steps: 1,
-          prompt: prompt.trim(),
+          prompt: imagePrompt,
           go_fast: true,
           num_outputs: 1,
           aspect_ratio: '16:9',
