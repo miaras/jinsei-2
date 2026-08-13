@@ -725,6 +725,30 @@ const DESTINATIONS = {
 const SAVE_CARD_COLORS = { japan:'#2E5077', china:'#A92E27', korea:'#2F684D', hanja:'#2F684D' };
 const destination=()=>DESTINATIONS[S.country]||DESTINATIONS.japan;
 const randomStart=()=>{const starts=destination().starts;return starts[Math.floor(Math.random()*starts.length)];};
+function parseCurrencyAmount(value){
+  if(typeof value==='number') return Number.isFinite(value)?value:null;
+  if(typeof value!=='string'||!value.trim()) return null;
+  const cleaned=value.replace(/,/g,'').match(/-?\d+(?:\.\d+)?/);
+  if(!cleaned) return null;
+  const amount=Number(cleaned[0]);
+  return Number.isFinite(amount)?amount:null;
+}
+function stateCurrencyAmount(state){
+  for(const key of ['yen','money','cash','funds','yuan','won']){
+    const amount=parseCurrencyAmount(state?.[key]);
+    if(amount!==null) return amount;
+  }
+  return null;
+}
+function normalizeCurrencyState(next,previous=null){
+  const state=next&&typeof next==='object'&&!Array.isArray(next)?next:{};
+  const amount=stateCurrencyAmount(state)??stateCurrencyAmount(previous)??destination().cash;
+  return {...state,yen:Math.round(amount)};
+}
+function formatStateCurrency(state,destinationData=destination()){
+  const amount=stateCurrencyAmount(state);
+  return destinationData.currency+(amount===null?'—':Math.round(amount).toLocaleString());
+}
 const LOCALES={
   japan:{brand:'人生',destination:'Your destination / 行き先',play:'プレイ · Play',note:'日本語かローマ字で話してください。あなたの物語は、あなたの言葉で生まれます。',speak:'話す',listen:'🔊 聞く',speechError:'音声エラー',card:'在留カード',back:'← 物語へ',country:'RESIDENCE CARD · 日本国',government:'日本国政府',people:'People · 人間関係',vocab:"Words you've earned · 語彙帳",labels:['日','時','腹','体','資金'],cardLabels:['名前','在留資格','日','場所','空腹','健康','仕事','資金'],hint:'ENTER to speak · *asterisks* for actions · Hint ¥500',times:{morning:'朝',afternoon:'昼',evening:'夕方',night:'夜'},none:'無職 · none'},
   china:{brand:'人生',destination:'选择目的地',play:'开始游戏',note:'请用中文或拼音说话。你的故事会随着你的话语展开。',speak:'说话',listen:'🔊 聆听',speechError:'语音错误',card:'居留卡',back:'← 返回故事',country:'RESIDENCE CARD · 中国',government:'中华人民共和国',people:'人物关系',vocab:'已学词汇',labels:['天数','时间','饥饿','健康','资金'],cardLabels:['姓名','身份','天数','地点','饥饿','健康','工作','资金'],hint:'ENTER to speak · *asterisks* for actions · Hint ¥500',times:{morning:'早晨',afternoon:'下午',evening:'傍晚',night:'夜晚'},none:'无业'},
@@ -945,6 +969,13 @@ function setPriceURL(isOpen){
 }
 function openPlans(){ renderPlanUI(); $('plans').classList.remove('hide'); setPriceURL(true); }
 function closePlans(){ $('plans').classList.add('hide'); setPriceURL(false); }
+const LEGAL_QUERY_KEYS={terms:'terms',privacy:'privacy',refunds:'refund'};
+function setLegalURL(documentKey){
+  const url=new URL(location.href);
+  Object.values(LEGAL_QUERY_KEYS).forEach(key=>url.searchParams.delete(key));
+  if(documentKey) url.searchParams.set(LEGAL_QUERY_KEYS[documentKey],'true');
+  history.replaceState(null,'',url.pathname+url.search+url.hash);
+}
 function openLegal(path){
   const key=String(path).replace(/^\//,'').replace(/\/$/,'');
   const template=$(`legal-${key}`);
@@ -953,8 +984,9 @@ function openLegal(path){
   $('legal-modal').classList.remove('hide');
   $('legal-card').scrollTop=0;
   $('legal-close').focus();
+  setLegalURL(key);
 }
-function closeLegal(){ $('legal-modal').classList.add('hide'); $('legal-body').innerHTML=''; }
+function closeLegal(){ $('legal-modal').classList.add('hide'); $('legal-body').innerHTML=''; setLegalURL(null); }
 async function startCheckout(plan){
   if(!CURRENT_USER){
     pendingCheckoutPlan=plan; closePlans(); openAuth($('game').classList.contains('on')); return;
@@ -990,7 +1022,10 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('legal-modal').c
 $('buy-unlimited').onclick=()=>startCheckout('unlimited');
 $('buy-pictures').onclick=()=>startCheckout('pictures');
 $('manage-billing').onclick=openBillingPortal;
-if(new URLSearchParams(location.search).get('price')==='true') requestAnimationFrame(openPlans);
+const initialQuery=new URLSearchParams(location.search);
+if(initialQuery.get('price')==='true') requestAnimationFrame(openPlans);
+const initialLegal=Object.entries(LEGAL_QUERY_KEYS).find(([,queryKey])=>initialQuery.get(queryKey)==='true')?.[0];
+if(initialLegal) requestAnimationFrame(()=>openLegal(`/${initialLegal}`));
 
 function openAuth(fromMidGame){
   midGameAuth=!!fromMidGame;
@@ -1150,11 +1185,11 @@ async function checkForSave(){
   $('continue-block').style.display='block';
   $('lives-list').innerHTML='';
   lives.forEach(life=>{
-    const save=life.data, d=DESTINATIONS[save.country||'japan']||destination();
+    const save=life.data, d=DESTINATIONS[save.country||'japan']||destination(), savedState=save.state||{};
     const country=save.country||'japan';
     const row=document.createElement('div'); row.style.cssText='display:flex;gap:7px';
     const resume=document.createElement('button'); resume.style.cssText=`flex:1;background:${SAVE_CARD_COLORS[country]||SAVE_CARD_COLORS.japan};color:var(--paper);border:none;padding:9px;text-align:left;font-family:var(--disp)`;
-    resume.textContent=`${save.name} · Day ${save.state.day} · ${save.state.location||'?'} · ${d.currency}${Number(save.state.yen).toLocaleString()}`;
+    resume.textContent=`${save.name} · Day ${savedState.day||'?'} · ${savedState.location||'?'} · ${formatStateCurrency(savedState,d)}`;
     resume.onclick=()=>resumeGame(save,life.id);
     const remove=document.createElement('button'); remove.textContent='×'; remove.title='Delete life'; remove.style.cssText='width:34px;background:none;border:1px solid var(--line);color:var(--shu);font-size:18px';
     remove.onclick=async()=>{ if(!confirm('Delete this saved life? This cannot be undone.')) return; if(CURRENT_USER) await fetch('/api/save?id='+encodeURIComponent(life.id),{method:'DELETE',credentials:'same-origin'}); else { const remaining=lives.filter(x=>x.id!==life.id); localStorage.setItem(GUEST_LIVES_KEY,JSON.stringify(remaining)); } await checkForSave(); };
@@ -1163,7 +1198,7 @@ async function checkForSave(){
 }
 function resumeGame(save,lifeId){
   S.lifeId=lifeId;
-  S.name=save.name; S.country=save.country||'japan'; S.level=save.level; S.hardcore=!!save.hardcore; S.state=save.state; S.vocab=save.vocab||[];
+  S.name=save.name; S.country=save.country||'japan'; S.level=save.level; S.hardcore=!!save.hardcore; S.state=normalizeCurrencyState(save.state); S.vocab=save.vocab||[];
   applyLocale();
   S.history=save.history||[]; S.stamps=save.stamps||[];
   S.turnCount=save.turnCount||0; S.signupPrompted=!!save.signupPrompted; S.summary=save.summary||''; S.awaitingAction=!!save.awaitingAction;
@@ -1546,7 +1581,7 @@ function finalizeTurn(sections, hadPlayerTurn){
   if(sections.STATE){
     try{
       const a=sections.STATE.indexOf('{'), b=sections.STATE.lastIndexOf('}');
-      S.state = JSON.parse(sections.STATE.slice(a,b+1));
+      S.state = normalizeCurrencyState(JSON.parse(sections.STATE.slice(a,b+1)),S.state);
     }catch(e){ /* keep prior state if malformed */ }
   }
 
@@ -1598,7 +1633,7 @@ function addStamp(label){
 function meterClass(v){ return v<=20?'crit': v<=45?'warn':''; }
 function valClass(v){ return v<=20?'crit': v<=45?'warn':''; }
 function renderCard(){
-  const st=S.state;
+  const st=S.state=normalizeCurrencyState(S.state);
   const hunger = st.hunger==null?100:st.hunger;
   const health = st.health==null?100:st.health;
   $('hud').innerHTML=`${esc(st.location)}${st.job?' · '+esc(st.job):' · 無職'}`;
@@ -1608,7 +1643,7 @@ function renderCard(){
   $('sb-hunger').className='sb-val '+valClass(hunger);
   $('sb-health').textContent=health+'%';
   $('sb-health').className='sb-val '+valClass(health);
-  $('sb-yen').textContent=destination().currency+Number(st.yen).toLocaleString();
+  $('sb-yen').textContent=formatStateCurrency(st);
   $('c-name').textContent=S.name;
   $('c-visa').textContent=st.visa||'—';
   $('c-day').textContent=`${locale().labels[0]} ${st.day} · ${locale().times[st.time]||st.time}`;
@@ -1616,7 +1651,7 @@ function renderCard(){
   $('c-hunger').innerHTML=`<span class="meter ${meterClass(hunger)}"><i style="width:${hunger}%"></i></span><span class="meter-pct">${hunger}%</span>`;
   $('c-health').innerHTML=`<span class="meter ${meterClass(health)}"><i style="width:${health}%"></i></span><span class="meter-pct">${health}%</span>`;
   $('c-job').textContent=st.job||locale().none;
-  $('c-yen').textContent=destination().currency+Number(st.yen).toLocaleString();
+  $('c-yen').textContent=formatStateCurrency(st);
 
   if(st.alive===false) lockForDeath();
 
