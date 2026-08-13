@@ -342,6 +342,12 @@ header{
 .feedback .fb-mark{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;margin-right:8px}
 .feedback.ok .fb-mark{color:var(--ok)}
 .feedback.miss .fb-mark{color:var(--shu)}
+.retry-turn{
+  display:block;margin-top:10px;border:0;background:var(--ink);color:var(--paper);
+  padding:7px 14px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;
+}
+.retry-turn:hover{background:var(--ai)}
+.retry-turn:disabled{opacity:.5;cursor:wait}
 
 .milestone-banner{
   max-width:640px;margin:0 auto 24px;text-align:center;font-family:var(--disp);
@@ -760,7 +766,7 @@ const S = {
   name:'', country:'japan', level:'basic', hardcore:false, lifeId:null,
   state:{ day:1, time:'afternoon', location:'', yen:180000,
           hunger:85, health:100, alive:true,
-          job:null, visa:'Temporary Visitor (90 days)', relationships:[], flags:[] },
+          job:null, visa:'Temporary Visitor (90 days)', relationships:[], appearances:{}, flags:[] },
   vocab:[], history:[], stamps:[], busy:false, hintSpend:0,
   turnCount:0, signupPrompted:false, summary:'', awaitingAction:false
 };
@@ -812,7 +818,10 @@ function stateCurrencyAmount(state){
 function normalizeCurrencyState(next,previous=null){
   const state=next&&typeof next==='object'&&!Array.isArray(next)?next:{};
   const amount=stateCurrencyAmount(state)??stateCurrencyAmount(previous)??destination().cash;
-  return {...state,yen:Math.round(amount)};
+  const appearances=state.appearances&&typeof state.appearances==='object'&&!Array.isArray(state.appearances)
+    ? state.appearances
+    : (previous?.appearances&&typeof previous.appearances==='object'?previous.appearances:{});
+  return {...state,yen:Math.round(amount),appearances};
 }
 function formatStateCurrency(state,destinationData=destination()){
   const amount=stateCurrencyAmount(state);
@@ -864,6 +873,12 @@ STORY RULES:
 - Keep everything SHORT. Narration 2-3 sentences. One NPC line per turn, 1-2 sentences.
 - When nobody is speaking to the player, OMIT @@NPC@@. If a specific, natural next action is available or required, do not perform it: end @@NARRATION@@ by asking, "Would you like to [specific action]? Type yes, no, or what you want to do." If there is no clear action to propose, end with: "What do you want to do? Type what you want to do." These are action prompts, not dialogue.
 
+IMAGE CHARACTER CONTINUITY:
+- People may appear naturally in @@SCENE@@ when physically present. Do not force a person into every image.
+- STATE.appearances is the authoritative visual identity record. Each key is a character name (including ${S.name} if the player is shown); each value is a compact 12-20 word description covering approximate age, hair, face, build, and one signature clothing detail or color.
+- The first time a named person appears in an image prompt, establish their description in STATE.appearances. On every later appearance, reuse those same traits and wording closely. Never silently change age, hair, facial features, build, or signature color.
+- Keep at most 8 recurring appearance records. Never use a real public figure or celebrity as a visual reference.
+
 SURVIVAL — HUNGER, HEALTH, DEATH: This life has real stakes. Track "hunger" and "health" (0-100 each) in STATE every turn.
 - Hunger drains steadily with time (roughly ${S.hardcore ? '15-30' : '10-20'} per skipped meal or half-day of neglect). Eating a real meal restores it substantially (40-70); a small snack helps a little (15-25).
 - If hunger sits at or near 0 for multiple turns in a row, health starts draining too (hunger damage), and narration should reflect it: shakiness, dizziness, trouble concentrating (which can plausibly make their Japanese worse under FEEDBACK).
@@ -892,9 +907,9 @@ BETTER: (improved ${destination().language} with ${destination().romanization} i
 @@SUGGESTIONS@@
 (2-3 short ${destination().romanization} phrases the player might try next, one per line)
 @@SCENE@@
-(one concise, purely VISUAL sentence describing the CURRENT setting — place, light, one or two objects, mood. 8-14 words. ABSOLUTELY NO PEOPLE: no characters, bodies, faces, figures, or implied crowds. Describe only the empty space.)
+(one vivid 70-100 word prompt for the CURRENT scene. State the composition, place, time, light, weather, objects, textures, and mood. Include people who are naturally present and what they are doing. For every named recurring person shown, repeat their stable STATE.appearances description closely; establish it here and in STATE if new. Keep ethnicity and local details appropriate to ${destination().country}. Do not include dialogue, captions, signs with invented text, celebrities, or contradictory appearance details.)
 @@STATE@@
-(one single-line JSON object, no line breaks inside it: {"day":int,"time":"morning|afternoon|evening|night","location":"short place name","yen":int,"hunger":0-100,"health":0-100,"alive":true|false,"job":"job title or null","visa":"visa status","relationships":[{"name":"...","role":"...","level":1-5}],"flags":["short plot memory strings, max 10"]})
+(one single-line JSON object, no line breaks inside it: {"day":int,"time":"morning|afternoon|evening|night","location":"short place name","yen":int,"hunger":0-100,"health":0-100,"alive":true|false,"job":"job title or null","visa":"visa status","relationships":[{"name":"...","role":"...","level":1-5}],"appearances":{"character name":"stable 12-20 word visual description, max 8 people"},"flags":["short plot memory strings, max 10"]})
 @@MILESTONE@@
 (CAPS LABEL or NONE)
 @@SUMMARY@@
@@ -1376,7 +1391,7 @@ async function start(){
   enterGameRoute();
   const d=destination();
   const opening=randomStart();
-  S.state={ day:1, time:opening.time, location:opening.location, yen:d.cash, hunger:85, health:100, alive:true, job:null, visa:d.visa, relationships:[], flags:[`Opening: ${opening.hook}`] };
+  S.state={ day:1, time:opening.time, location:opening.location, yen:d.cash, hunger:85, health:100, alive:true, job:null, visa:d.visa, relationships:[], appearances:{}, flags:[`Opening: ${opening.hook}`] };
   renderCard();
   await saveGame();
   await turn(null, `[GAME START] Begin in medias res at ${opening.location}, Day 1, ${opening.time}, with ${d.currency}${d.cash.toLocaleString()}, hunger 85, and health 100. Story hook: ${opening.hook}. This is NOT an airport or arrival scene. Open like the first page of a grounded contemporary novel: make the location tactile and specific, explain only as much as feels natural, and let the first NPC encounter emerge from the hook. The player must use ${d.language} to navigate it. Give suggestions suited to their level.`);
@@ -1602,7 +1617,15 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
       $('auth').classList.remove('hide');
       setAuthMode('login');
     } else {
-      d.innerHTML='<span class="fb-mark">接続エラー</span>The line went quiet — the connection failed. Say it again to retry.';
+      d.innerHTML='<span class="fb-mark">接続エラー</span>The line went quiet — the connection failed.';
+      const retry=document.createElement('button');
+      retry.type='button'; retry.className='retry-turn'; retry.textContent='Try again';
+      retry.onclick=async()=>{
+        retry.disabled=true;
+        d.remove();
+        await turn(playerText,directive);
+      };
+      d.appendChild(retry);
       stream.appendChild(d); scrollDown(true);
     }
     S.busy=false; $('send').disabled=false; return;

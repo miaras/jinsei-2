@@ -245,10 +245,11 @@ async function generateSceneImage(request, user) {
   const imageLocales = { japan: 'Japan', china: 'China', korea: 'South Korea', hanja: 'South Korea' };
   const imageLocale = imageLocales[country];
   if (!imageLocale) return json({ error: 'A valid country is required.' }, 400);
-  const scenePrompt = prompt.trim().split(/\s+/).slice(0, 18).join(' ');
-  const imagePrompt = `${imageLocale}: ${scenePrompt}`.slice(0, 240);
+  const scenePrompt = prompt.trim().split(/\s+/).slice(0, 110).join(' ');
+  const imagePrompt = `${imageLocale}: ${scenePrompt}`.slice(0, 1000);
   if (typeof lifeId !== 'string' || !/^[0-9a-f-]{36}$/i.test(lifeId)) return json({ error: 'A valid life id is required.' }, 400);
   if (!Number.isInteger(turnNumber) || turnNumber < 0) return json({ error: 'A valid turn number is required.' }, 400);
+  const imageSeed = parseInt(createHash('sha256').update(lifeId).digest('hex').slice(0, 8), 16);
 
   const client = supabaseAdmin();
   const { data: life, error: lifeError } = await client.from('jinsei_lives')
@@ -283,7 +284,9 @@ async function generateSceneImage(request, user) {
       body: JSON.stringify({
         input: {
           prompt: imagePrompt,
-          go_fast: true,
+          seed: imageSeed,
+          go_fast: false,
+          num_inference_steps: 4,
           num_outputs: 1,
           aspect_ratio: '16:9',
           output_format: 'webp',
