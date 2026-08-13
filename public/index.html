@@ -34,7 +34,7 @@ html[data-theme="china"]{
   --line:#C9A99C;
   --ok:#6F5730;
 }
-html[data-theme="korea"]{
+html[data-theme="korea"],html[data-theme="hanja"]{
   --paper:#F0F2E9;
   --paper-deep:#DDE4D7;
   --ink:#1F2C22;
@@ -114,6 +114,7 @@ input{font-family:inherit}
 }
 #name-input:focus{outline:2px solid var(--ai);outline-offset:1px}
 .levels{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px}
+#destinations{grid-template-columns:repeat(4,1fr)}
 .level-btn{
   border:1px solid var(--line);background:var(--paper);padding:12px 8px;text-align:center;
   transition:transform .08s;
@@ -451,6 +452,7 @@ aside{
   #game.show-card aside{display:flex}
   .cardtoggle{display:inline-block !important}
 }
+@media (max-width:620px){#destinations{grid-template-columns:repeat(2,1fr)}}
 .cardtoggle{
   display:none;margin-left:auto;background:none;border:1px solid var(--line);
   font-family:var(--mono);font-size:11px;padding:3px 10px;color:var(--ink-soft);
@@ -576,6 +578,7 @@ aside{
       <button class="level-btn destination-btn sel" data-country="japan"><span class="jp">日本</span><span class="en">Japan · Japanese</span></button>
       <button class="level-btn destination-btn" data-country="china"><span class="jp">中国</span><span class="en">China · Mandarin</span></button>
       <button class="level-btn destination-btn" data-country="korea"><span class="jp">한국</span><span class="en">Korea · Korean</span></button>
+      <button class="level-btn destination-btn" data-country="hanja"><span class="jp">韓國</span><span class="en">Korea · Hanja</span></button>
     </div>
     <span class="field-label" id="language-label">Your Japanese / 日本語のレベル</span>
     <div class="levels" id="levels">
@@ -686,7 +689,7 @@ const API_ENDPOINT = '/api/turn';
 /* ================= STATE ================= */
 const S = {
   name:'', country:'japan', level:'basic', hardcore:false, lifeId:null,
-  state:{ day:1, time:'afternoon', location:'Narita Airport', yen:180000,
+  state:{ day:1, time:'afternoon', location:'', yen:180000,
           hunger:85, health:100, alive:true,
           job:null, visa:'Temporary Visitor (90 days)', relationships:[], flags:[] },
   vocab:[], history:[], stamps:[], busy:false, hintSpend:0,
@@ -694,28 +697,65 @@ const S = {
 };
 const HINT_COST = 500;
 const DESTINATIONS = {
-  japan:{country:'Japan',language:'Japanese',script:'日本語',romanization:'rōmaji',arrival:'Narita Airport',cash:180000,currency:'¥',currencyName:'yen',visa:'Temporary Visitor (90 days)',lede:'You land at Narita with a suitcase, ¥180,000, and whatever Japanese you carry in your head.'},
-  china:{country:'China',language:'Mandarin Chinese',script:'中文',romanization:'pinyin',arrival:'Shanghai Pudong Airport',cash:8000,currency:'¥',currencyName:'yuan',visa:'Temporary Visitor',lede:'You land in Shanghai with a suitcase, ¥8,000, and whatever Mandarin you carry in your head.'},
-  korea:{country:'Korea',language:'Korean',script:'한국어',romanization:'romanization',arrival:'Incheon International Airport',cash:800000,currency:'₩',currencyName:'won',visa:'Temporary Visitor (90 days)',lede:'You land at Incheon with a suitcase, ₩800,000, and whatever Korean you carry in your head.'}
+  japan:{country:'Japan',language:'Japanese',script:'日本語',romanization:'rōmaji',cash:180000,currency:'¥',currencyName:'yen',visa:'Temporary Visitor (90 days)',lede:'Begin somewhere unexpected in Japan with ¥180,000 and whatever Japanese you carry in your head.',starts:[
+    {location:'a rain-darkened kissaten in Koenji',time:'evening',hook:'a handwritten notice on the next table seems meant for you'},
+    {location:'a nearly empty local-train platform outside Matsumoto',time:'morning',hook:'the station clock has stopped and the next train is not on the board'},
+    {location:'a narrow used-book shop beside Kyoto’s Takase River',time:'afternoon',hook:'the owner has set aside a book bearing your name'},
+    {location:'a coin laundry beneath the Sapporo tram line',time:'night',hook:'your only dry clothes are turning slowly behind the glass'},
+    {location:'a seaside shotengai in Onomichi',time:'afternoon',hook:'a shopkeeper mistakes you for the person expected to help today'}]},
+  china:{country:'China',language:'Mandarin Chinese',script:'中文',romanization:'pinyin',cash:8000,currency:'¥',currencyName:'yuan',visa:'Temporary Visitor',lede:'Begin somewhere unexpected in China with ¥8,000 and whatever Mandarin you carry in your head.',starts:[
+    {location:'a tiled teahouse at the end of a Chengdu alley',time:'afternoon',hook:'a rainstorm has trapped everyone inside together'},
+    {location:'a twenty-four-hour bookshop near Shanghai’s Suzhou Creek',time:'night',hook:'a returned notebook contains an address written in your hand'},
+    {location:'a quiet hutong breakfast stall in Beijing',time:'morning',hook:'the owner serves you an order you did not place'},
+    {location:'the upper landing of a hillside stairway in Chongqing',time:'evening',hook:'your map insists the building in front of you is a street'},
+    {location:'a small ferry pier on Hangzhou’s Grand Canal',time:'morning',hook:'the last passenger has left behind a sealed parcel'}]},
+  korea:{country:'Korea',language:'Korean',script:'한국어',romanization:'romanization',cash:800000,currency:'₩',currencyName:'won',visa:'Temporary Visitor (90 days)',lede:'Begin somewhere unexpected in Korea with ₩800,000 and whatever Korean you carry in your head.',starts:[
+    {location:'a late-night laundromat in Mangwon-dong',time:'night',hook:'a stranger’s abandoned phone keeps ringing beside you'},
+    {location:'a small hanok library in Jeonju',time:'afternoon',hook:'the librarian believes you volunteered for today’s reading'},
+    {location:'a windswept bus stop above Busan’s Huinnyeoul coast',time:'evening',hook:'the final bus has passed without stopping'},
+    {location:'a covered market alley in Daegu',time:'morning',hook:'one stall opens only after its owner calls you by name'},
+    {location:'a rooftop garden overlooking Euljiro',time:'evening',hook:'you came to return a key but no one admits owning it'}]},
+  hanja:{country:'Korea',language:'Korean',script:'한글·漢字 혼용',romanization:'Hangul reading',cash:800000,currency:'₩',currencyName:'won',visa:'Temporary Visitor (90 days)',lede:'한국어 속 漢字語를 배우며, 소설 같은 뜻밖의 장소에서 삶을 시작합니다.',starts:[
+    {location:'서촌의 오래된 한옥 서점',time:'afternoon',hook:'주인이 당신 앞으로 맡겨진 낡은 字典을 건넨다'},
+    {location:'비 내리는 종로의 인쇄소 골목',time:'evening',hook:'문 닫은 인쇄소 안에서 아직 활자 찍는 소리가 난다'},
+    {location:'경주 남산 아래 작은 찻집',time:'morning',hook:'차와 함께 이름 모를 古文書 한 장이 놓인다'},
+    {location:'인천 개항장의 헌책 창고',time:'afternoon',hook:'분류되지 않은 상자에 당신 이름의 한자가 적혀 있다'},
+    {location:'대전행 무궁화호의 조용한 마지막 객차',time:'night',hook:'맞은편 좌석에 주인 없는 日記가 펼쳐져 있다'}]}
 };
-const SAVE_CARD_COLORS = { japan:'#2E5077', china:'#A92E27', korea:'#2F684D' };
+const SAVE_CARD_COLORS = { japan:'#2E5077', china:'#A92E27', korea:'#2F684D', hanja:'#2F684D' };
 const destination=()=>DESTINATIONS[S.country]||DESTINATIONS.japan;
+const randomStart=()=>{const starts=destination().starts;return starts[Math.floor(Math.random()*starts.length)];};
 const LOCALES={
   japan:{brand:'人生',destination:'Your destination / 行き先',play:'プレイ · Play',note:'日本語かローマ字で話してください。あなたの物語は、あなたの言葉で生まれます。',speak:'話す',listen:'🔊 聞く',speechError:'音声エラー',card:'在留カード',back:'← 物語へ',country:'RESIDENCE CARD · 日本国',government:'日本国政府',people:'People · 人間関係',vocab:"Words you've earned · 語彙帳",labels:['日','時','腹','体','資金'],cardLabels:['名前','在留資格','日','場所','空腹','健康','仕事','資金'],hint:'ENTER to speak · *asterisks* for actions · Hint ¥500',times:{morning:'朝',afternoon:'昼',evening:'夕方',night:'夜'},none:'無職 · none'},
   china:{brand:'人生',destination:'选择目的地',play:'开始游戏',note:'请用中文或拼音说话。你的故事会随着你的话语展开。',speak:'说话',listen:'🔊 聆听',speechError:'语音错误',card:'居留卡',back:'← 返回故事',country:'RESIDENCE CARD · 中国',government:'中华人民共和国',people:'人物关系',vocab:'已学词汇',labels:['天数','时间','饥饿','健康','资金'],cardLabels:['姓名','身份','天数','地点','饥饿','健康','工作','资金'],hint:'ENTER to speak · *asterisks* for actions · Hint ¥500',times:{morning:'早晨',afternoon:'下午',evening:'傍晚',night:'夜晚'},none:'无业'},
-  korea:{brand:'인생',destination:'어디에서 시작할까요?',play:'시작하기',note:'한국어나 로마자로 말해 보세요. 당신의 이야기는 당신의 말로 시작됩니다.',speak:'말하기',listen:'🔊 듣기',speechError:'음성 오류',card:'외국인등록증',back:'← 이야기로',country:'RESIDENCE CARD · 대한민국',government:'대한민국 정부',people:'인간관계',vocab:'배운 단어',labels:['날짜','시간','허기','건강','자금'],cardLabels:['이름','체류 자격','날짜','장소','허기','건강','직업','자금'],hint:'ENTER to speak · *asterisks* for actions · Hint ¥500',times:{morning:'아침',afternoon:'오후',evening:'저녁',night:'밤'},none:'무직'}
+  korea:{brand:'인생',destination:'어디에서 시작할까요?',play:'시작하기',note:'한국어나 로마자로 말해 보세요. 당신의 이야기는 당신의 말로 시작됩니다.',speak:'말하기',listen:'🔊 듣기',speechError:'음성 오류',card:'외국인등록증',back:'← 이야기로',country:'RESIDENCE CARD · 대한민국',government:'대한민국 정부',people:'인간관계',vocab:'배운 단어',labels:['날짜','시간','허기','건강','자금'],cardLabels:['이름','체류 자격','날짜','장소','허기','건강','직업','자금'],hint:'ENTER to speak · *asterisks* for actions · Hint ¥500',times:{morning:'아침',afternoon:'오후',evening:'저녁',night:'밤'},none:'무직'},
+  hanja:{brand:'人生',destination:'어떤 삶을 시작할까요?',play:'始作하기',note:'한글로 대답해도 괜찮습니다. 등장인물의 漢字語를 문맥 속에서 배워 보세요.',speak:'말하기',listen:'듣기',speechError:'음성 오류',card:'人生 기록증',back:'← 이야기로',country:'LIFE RECORD · 韓國 漢字篇',government:'大韓民國',people:'人物 관계',vocab:'배운 漢字語',labels:['日','時','허기','健康','資金'],cardLabels:['姓名','狀態','日','場所','허기','健康','職業','資金'],hint:'ENTER to speak · *asterisks* for actions · Hint ₩500',times:{morning:'아침',afternoon:'午後',evening:'夕方',night:'夜間'},none:'無職'}
 };
 const locale=()=>LOCALES[S.country]||LOCALES.japan;
-const languageDescription=()=>({
+const languageDescription=()=>S.country==='hanja'?({
+  zero:'a Hanja beginner. Use only one very common Hanja word per NPC turn, surrounded by easy Hangul so its meaning is obvious from context.',
+  basic:'a basic Hanja learner. Use 2-3 common Sino-Korean words in Hanja per NPC turn, with natural Hangul particles and endings.',
+  conv:'an intermediate Hanja reader. Use natural Korean mixed script, writing many familiar Sino-Korean content words in Hanja while keeping grammar in Hangul.'
+})[S.level]:({
   zero:`an absolute beginner in ${destination().language}. NPCs must use the very simplest language, short sentences, and gesture a lot. Judge attempts extremely leniently; single words count as communication.`,
   basic:`a survival-level ${destination().language} speaker (greetings, numbers, simple requests). NPCs use plain short sentences. Judge leniently; reward any comprehensible attempt.`,
   conv:`a daily-conversation ${destination().language} speaker. NPCs speak naturally but clearly. Judge with normal standards; expect basic grammar, but minor errors still communicate.`
 })[S.level];
+const hanjaTeachingRules=()=>S.country==='hanja'?`
+HANJA MODE — critical:
+- The spoken language and grammar are Korean. The player may answer entirely in Hangul; never punish them for not typing Hanja.
+- NPC dialogue must mix Hangul and Hanja naturally, replacing level-appropriate Sino-Korean nouns and stems with Hanja while keeping particles and endings in Hangul. Example style: "오늘 會議는 午後 세 시에 始作해요."
+- Never write whole sentences as Classical Chinese. This is modern Korean mixed script.
+- In every NPC section, ROMAJI must contain the complete Hangul reading of the mixed-script JP line, not Latin romanization.
+- VOCAB entries must be exactly "漢字語 | 한글 독음 | English meaning". Prefer words that appeared in the NPC line and introduce no more than the learner level allows.
+- FEEDBACK coaches the player's Korean gently; when useful, show the relevant Hanja spelling and Hangul reading.
+`:'';
 
 const SYSTEM = () => `You are the game engine of 人生 (JINSEI), a slice-of-life text adventure set in present-day ${destination().country} that doubles as a ${destination().language} teacher. The player, ${S.name}, has just moved to ${destination().country} alone and must build an entire life — job hunting, apartment, friendships, romance, maybe marriage, visa renewals, festivals, illness, everything — over months of in-game time. The player's ${destination().language} level: ${languageDescription()}
 
 ${S.summary ? `STORY SO FAR (a running summary of everything that happened before the recent messages below — the recent message history is truncated to save space, so THIS is your memory of earlier events; treat it as canon and keep continuity with it):\n${S.summary}\n` : ''}
 CORE RULE — THE LANGUAGE GATE: The player must communicate in ${destination().language} (${destination().romanization} input is fine and should be read as ${destination().language}) to accomplish anything. If they write in English, NPCs respond with polite confusion in the local language and the situation does not advance — except rare NPCs who plausibly know some English, who may help a little but push the player toward ${destination().language}. Never let English fully succeed.
+${hanjaTeachingRules()}
 
 ACTIONS: Text wrapped in asterisks is a physical action, not speech — e.g. *wait*, *point at the menu*, *bow*, *hand over money*. Actions may be written in English; they bypass the language gate because they are non-verbal. Gesturing can get simple things done, but anything requiring words — jobs, friendships, paperwork, romance — still demands spoken ${destination().language}. When a turn is action-only, FEEDBACK should be UNDERSTOOD: none, not a language judgment. When the incoming message is labelled PLAYER ACTION, it is definitely an action even if it has no asterisks; take whatever the player typed as the action and do not apply the language gate to it.
 
@@ -777,7 +817,14 @@ document.querySelectorAll('#levels .level-btn').forEach(b=>{
 function updateDestinationUI(){
   const d=destination();
   $('setup-lede').textContent=`${d.lede} Find work. Find a home. Find people. The life you build is made of the words you can say.`;
-  $('language-label').textContent=`Your ${d.language} / ${d.script} のレベル`;
+  $('language-label').textContent=S.country==='hanja'?'한자 난이도 / 漢字 難易度':`Your ${d.language} / ${d.script} level`;
+  const levelCopy=S.country==='hanja'
+    ? [['入門','한 번에 한 글자'],['基礎','생활 속 한자어'],['混用','자연스러운 국한문 혼용']]
+    : [['Beginner','A few words at best'],['Basic','Survival phrases'],['Conversation','Can hold a conversation']];
+  document.querySelectorAll('#levels .level-btn').forEach((button,index)=>{
+    button.querySelector('.jp').textContent=levelCopy[index][0];
+    button.querySelector('.en').textContent=levelCopy[index][1];
+  });
   updateInputPrompt();
   applyLocale();
 }
@@ -789,7 +836,7 @@ function updateInputPrompt(){
 }
 function applyLocale(){
   const l=locale();
-  document.documentElement.lang=S.country==='china'?'zh-CN':S.country==='korea'?'ko':'ja';
+  document.documentElement.lang=S.country==='china'?'zh-CN':(S.country==='korea'||S.country==='hanja')?'ko':'ja';
   document.documentElement.dataset.theme=S.country;
   document.querySelectorAll('.sb-brand,.brand').forEach(el=>{ el.childNodes[0].nodeValue=l.brand; });
   $('destination-label').textContent=l.destination; $('begin-btn').textContent=l.play; $('setup-note').textContent=l.note;
@@ -1133,15 +1180,16 @@ async function start(){
   S.lifeId=null;
   S.awaitingAction=false;
   updateInputPrompt();
-  $('begin-btn').disabled = true; $('begin-btn').textContent='着陸中…';
+  $('begin-btn').disabled = true; $('begin-btn').textContent=S.country==='hanja'?'故事를 여는 중…':'Opening story…';
   $('setup').classList.add('hide');
   $('game').classList.add('on');
   $('statusbar').classList.remove('hide');
   const d=destination();
-  S.state={ day:1, time:'afternoon', location:d.arrival, yen:d.cash, hunger:85, health:100, alive:true, job:null, visa:d.visa, relationships:[], flags:[] };
+  const opening=randomStart();
+  S.state={ day:1, time:opening.time, location:opening.location, yen:d.cash, hunger:85, health:100, alive:true, job:null, visa:d.visa, relationships:[], flags:[`Opening: ${opening.hook}`] };
   renderCard();
   await saveGame();
-  await turn(null, `[GAME START] ${S.name} has just cleared customs at ${d.arrival}, Day 1, afternoon, with ${d.currency}${d.cash.toLocaleString()}, one suitcase, hunger 85, health 100. Open the story: set the scene vividly but briefly, have the first NPC encounter happen naturally (someone the player must speak ${d.language} with to get what they need — e.g. finding the right local transit). Give suggestions suited to their level.`);
+  await turn(null, `[GAME START] Begin in medias res at ${opening.location}, Day 1, ${opening.time}, with ${d.currency}${d.cash.toLocaleString()}, hunger 85, and health 100. Story hook: ${opening.hook}. This is NOT an airport or arrival scene. Open like the first page of a grounded contemporary novel: make the location tactile and specific, explain only as much as feels natural, and let the first NPC encounter emerge from the hook. The player must use ${d.language} to navigate it. Give suggestions suited to their level.`);
 }
 
 /* ================= SIGN-UP NUDGE (guest players, after their 10th turn) ================= */

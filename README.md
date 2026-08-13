@@ -1,6 +1,6 @@
 # 人生 — JINSEI
 
-JINSEI is an AI-powered life simulator about arriving in Japan with limited money, limited Japanese, and no established life. Players communicate in Japanese or rōmaji, find work and housing, form relationships, and build a persistent story one turn at a time.
+JINSEI is an AI-powered language-learning life simulator set in Japan, China, or Korea. Players can practice Japanese, Mandarin, Korean, or modern Korean mixed with Hanja, choose a learning difficulty, find work and housing, form relationships, and build a persistent story one turn at a time. Every new life opens in a randomly selected, novel-like location rather than an airport.
 
 The application uses Next.js, DeepSeek V4 Flash through OpenRouter, and Supabase Postgres. Accounts are optional: guests save locally in their browser, while registered players can keep and continue multiple lives across devices.
 
