@@ -957,7 +957,10 @@ function renderPlanUI(){
 async function refreshPlan(){
   try{
     const r=await fetch('/api/plan',{credentials:'same-origin'});
-    if(r.ok) CURRENT_PLAN=await r.json();
+    if(r.ok){
+      CURRENT_PLAN=await r.json();
+      CURRENT_USER=CURRENT_PLAN.username||null;
+    }
   }catch(e){}
   renderPlanUI();
 }
@@ -1121,10 +1124,6 @@ function updateIdentityUI(){
   renderPlanUI();
 }
 async function initIdentity(){
-  try{
-    const r = await fetch('/api/me', {credentials:'same-origin'});
-    if(r.ok){ const d=await r.json(); CURRENT_USER=d.username; }
-  }catch(e){ /* no session — playing as guest, which is the default */ }
   await refreshPlan();
   updateIdentityUI();
   await checkForSave();

@@ -14,7 +14,8 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const MODEL = process.env.OPENROUTER_MODEL || 'deepseek/deepseek-v4-flash';
+const BASE_MODEL = process.env.OPENROUTER_MODEL || 'deepseek/deepseek-v4-flash';
+const MODEL = BASE_MODEL.endsWith(':nitro') ? BASE_MODEL : `${BASE_MODEL}:nitro`;
 const FREE_TURN_LIMIT = 20;
 const GUEST_USAGE_COOKIE = 'jinsei_guest_usage';
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(['active', 'trialing']);
@@ -419,10 +420,13 @@ export async function GET(request, context) {
 
   if (name === 'plan') {
     const user = await currentUser(request);
-    const entitlement = await entitlementForUser(user);
     const identity = usageIdentity(request, user);
-    const usage = await turnUsage(identity.subjectKey);
+    const [entitlement, usage] = await Promise.all([
+      entitlementForUser(user),
+      turnUsage(identity.subjectKey)
+    ]);
     return json({
+      username: user?.username || null,
       plan: entitlement.plan,
       status: entitlement.status,
       unlimited: entitlement.unlimited,
