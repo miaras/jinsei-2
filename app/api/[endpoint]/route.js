@@ -14,11 +14,13 @@ import { lookupDictionary } from '../../../lib/dictionary.js';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const maxDuration = 300;
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const BASE_MODEL = process.env.OPENROUTER_MODEL || 'deepseek/deepseek-v4-flash';
 const MODEL = BASE_MODEL.endsWith(':nitro') ? BASE_MODEL : `${BASE_MODEL}:nitro`;
 const FREE_TURN_LIMIT = 20;
+const IMAGE_TIMEOUT_MS = 5 * 60 * 1000;
 const GUEST_USAGE_COOKIE = 'jinsei_guest_usage';
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(['active', 'trialing']);
 const anonTurnLog = new Map();
@@ -280,13 +282,14 @@ async function generateSceneImage(request, user) {
       turnNumber,
       prompt: imagePrompt
     });
+    const imageDeadline = Date.now() + IMAGE_TIMEOUT_MS;
     const predictionResponse = await fetch('https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.REPLICATE_API_TOKEN}`,
         'Content-Type': 'application/json',
         'Prefer': 'wait=60',
-        'Cancel-After': '90s'
+        'Cancel-After': '5m'
       },
       body: JSON.stringify({
         input: {
@@ -302,10 +305,29 @@ async function generateSceneImage(request, user) {
       }),
       signal: request.signal
     });
-    const prediction = await predictionResponse.json().catch(() => ({}));
+    let prediction = await predictionResponse.json().catch(() => ({}));
     if (!predictionResponse.ok) throw new Error(prediction.detail || prediction.error || 'Replicate returned an error.');
+    while (!prediction.output && ['starting', 'processing'].includes(prediction.status)) {
+      if (Date.now() >= imageDeadline) throw new Error('Replicate did not finish the picture within five minutes.');
+      const pollUrl = prediction.urls?.get;
+      if (typeof pollUrl !== 'string') throw new Error('Replicate did not provide a prediction status URL.');
+      const parsedPollUrl = new URL(pollUrl);
+      if (parsedPollUrl.protocol !== 'https:' || parsedPollUrl.hostname !== 'api.replicate.com') {
+        throw new Error('Replicate returned an unexpected prediction status URL.');
+      }
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      const pollResponse = await fetch(pollUrl, {
+        headers: { 'Authorization': `Bearer ${process.env.REPLICATE_API_TOKEN}` },
+        signal: request.signal
+      });
+      prediction = await pollResponse.json().catch(() => ({}));
+      if (!pollResponse.ok) throw new Error(prediction.detail || prediction.error || 'Could not check the Replicate prediction.');
+    }
+    if (['failed', 'canceled', 'aborted'].includes(prediction.status)) {
+      throw new Error(prediction.error || `Replicate prediction ${prediction.status}.`);
+    }
     const outputUrl = Array.isArray(prediction.output) ? prediction.output[0] : prediction.output;
-    if (typeof outputUrl !== 'string') throw new Error('Replicate did not finish the picture in time.');
+    if (typeof outputUrl !== 'string') throw new Error('Replicate did not return a generated picture.');
     const parsedOutput = new URL(outputUrl);
     if (parsedOutput.protocol !== 'https:' || !(parsedOutput.hostname === 'replicate.delivery' || parsedOutput.hostname.endsWith('.replicate.delivery'))) {
       throw new Error('Replicate returned an unexpected output URL.');
