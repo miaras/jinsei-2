@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "dictionaries:update": "node scripts/build-dictionaries.mjs",
     "start": "next start"
   },
   "engines": {

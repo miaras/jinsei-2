@@ -229,6 +229,32 @@ input{font-family:inherit}
 .legal-loading{padding:50px 0;text-align:center;font-family:var(--mono);font-size:12px;color:var(--ink-soft)}
 @media(max-width:620px){.plans-grid{grid-template-columns:1fr}.plan-card{min-height:0}}
 
+/* ============ CLICK-TO-DEFINE DICTIONARY ============ */
+.dict-token,.dict-term{
+  display:inline;background:none;border:0;border-bottom:1px dotted transparent;padding:0;margin:0;
+  color:inherit;font:inherit;line-height:inherit;text-align:inherit;cursor:help;
+}
+.dict-token:hover,.dict-token:focus-visible,.dict-term:hover,.dict-term:focus-visible{
+  color:var(--ai);border-bottom-color:var(--ai);outline:none;
+}
+#dictionary-modal{position:fixed;inset:0;z-index:260;display:flex;align-items:center;justify-content:center;padding:18px}
+.dictionary-backdrop{position:absolute;inset:0;background:rgba(35,31,27,.58)}
+#dictionary-card{
+  position:relative;z-index:1;width:min(520px,100%);max-height:min(620px,calc(100dvh - 36px));overflow-y:auto;
+  background:var(--paper);border:1.5px solid var(--ink);padding:25px 24px 20px;box-shadow:7px 7px 0 rgba(35,31,27,.2);
+}
+#dictionary-close{position:absolute;right:10px;top:8px;background:none;border:0;color:var(--ink-soft);font-size:18px;padding:5px}
+.dictionary-kicker{font-family:var(--mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft)}
+#dictionary-query{font-family:var(--disp);font-size:clamp(32px,8vw,52px);font-weight:700;line-height:1.2;margin:8px 30px 15px 0;overflow-wrap:anywhere}
+.dictionary-stem{font-family:var(--mono);font-size:11px;color:var(--ai);margin:-8px 0 14px}
+.dictionary-result{border-top:1px solid var(--line);padding:13px 0}
+.dictionary-result:first-child{border-top:0}
+.dictionary-reading{font-family:var(--disp);font-size:15px;font-weight:600;margin-bottom:3px}
+.dictionary-definition{font-size:13px;line-height:1.55;color:var(--ink-soft)}
+.dictionary-empty,.dictionary-loading{padding:18px 0;color:var(--ink-soft);font-size:13px}
+.dictionary-source{border-top:1px dashed var(--line);padding-top:11px;margin-top:6px;font-family:var(--mono);font-size:9px;line-height:1.5;color:var(--ink-soft)}
+.vocab-card-jp.dict-term{display:block;width:100%}
+
 /* ============ SIGN-UP NUDGE (guest, turn 10) ============ */
 .signup-nudge{
   max-width:640px;margin:0 auto 22px;border:1.5px solid var(--ai);background:var(--ai-soft);
@@ -586,6 +612,17 @@ aside{
   <h2>How refunds are issued</h2><p>Approved refunds are processed by Paddle to the original payment method when possible. Processing times depend on the payment provider.</p>
 </template>
 
+<!-- ================= LOCAL DICTIONARY MODAL ================= -->
+<section id="dictionary-modal" class="hide" role="dialog" aria-modal="true" aria-labelledby="dictionary-query">
+  <div class="dictionary-backdrop"></div>
+  <article id="dictionary-card">
+    <button id="dictionary-close" type="button" aria-label="Close dictionary">✕</button>
+    <div class="dictionary-kicker">Dictionary</div>
+    <h2 id="dictionary-query"></h2>
+    <div id="dictionary-body"></div>
+  </article>
+</section>
+
 <!-- ================= SETUP (default landing screen — Play needs no account) ================= -->
 <section id="setup">
   <div class="setup-sub">A life, spoken into being</div>
@@ -782,10 +819,10 @@ function formatStateCurrency(state,destinationData=destination()){
   return destinationData.currency+(amount===null?'—':Math.round(amount).toLocaleString());
 }
 const LOCALES={
-  japan:{brand:'人生',destination:'Your destination / 行き先',play:'プレイ · Play',note:'日本語かローマ字で話してください。あなたの物語は、あなたの言葉で生まれます。',speak:'話す',listen:'🔊 聞く',speechError:'音声エラー',card:'在留カード',back:'← 物語へ',country:'RESIDENCE CARD · 日本国',government:'日本国政府',people:'People · 人間関係',vocab:"Words you've earned · 語彙帳",labels:['日','時','腹','体','資金'],cardLabels:['名前','在留資格','日','場所','空腹','健康','仕事','資金'],hint:'ENTER to speak · *asterisks* for actions · Hint ¥500',times:{morning:'朝',afternoon:'昼',evening:'夕方',night:'夜'},none:'無職 · none'},
-  china:{brand:'人生',destination:'选择目的地',play:'开始游戏',note:'请用中文或拼音说话。你的故事会随着你的话语展开。',speak:'说话',listen:'🔊 聆听',speechError:'语音错误',card:'居留卡',back:'← 返回故事',country:'RESIDENCE CARD · 中国',government:'中华人民共和国',people:'人物关系',vocab:'已学词汇',labels:['天数','时间','饥饿','健康','资金'],cardLabels:['姓名','身份','天数','地点','饥饿','健康','工作','资金'],hint:'ENTER to speak · *asterisks* for actions · Hint ¥500',times:{morning:'早晨',afternoon:'下午',evening:'傍晚',night:'夜晚'},none:'无业'},
-  korea:{brand:'인생',destination:'어디에서 시작할까요?',play:'시작하기',note:'한국어나 로마자로 말해 보세요. 당신의 이야기는 당신의 말로 시작됩니다.',speak:'말하기',listen:'🔊 듣기',speechError:'음성 오류',card:'외국인등록증',back:'← 이야기로',country:'RESIDENCE CARD · 대한민국',government:'대한민국 정부',people:'인간관계',vocab:'배운 단어',labels:['날짜','시간','허기','건강','자금'],cardLabels:['이름','체류 자격','날짜','장소','허기','건강','직업','자금'],hint:'ENTER to speak · *asterisks* for actions · Hint ¥500',times:{morning:'아침',afternoon:'오후',evening:'저녁',night:'밤'},none:'무직'},
-  hanja:{brand:'人生',destination:'어떤 삶을 시작할까요?',play:'始作하기',note:'한글로 대답해도 괜찮습니다. 등장인물의 漢字語를 문맥 속에서 배워 보세요.',speak:'말하기',listen:'듣기',speechError:'음성 오류',card:'人生 기록증',back:'← 이야기로',country:'LIFE RECORD · 韓國 漢字篇',government:'大韓民國',people:'人物 관계',vocab:'배운 漢字語',labels:['日','時','허기','健康','資金'],cardLabels:['姓名','狀態','日','場所','허기','健康','職業','資金'],hint:'ENTER to speak · *asterisks* for actions · Hint ₩500',times:{morning:'아침',afternoon:'午後',evening:'夕方',night:'夜間'},none:'無職'}
+  japan:{brand:'人生',destination:'Your destination / 行き先',play:'プレイ · Play',note:'日本語かローマ字で話してください。あなたの物語は、あなたの言葉で生まれます。',speak:'話す',listen:'🔊 聞く',speechError:'音声エラー',thinking:'相手が考えている',card:'在留カード',back:'← 物語へ',country:'RESIDENCE CARD · 日本国',government:'日本国政府',people:'People · 人間関係',vocab:"Words you've earned · 語彙帳",labels:['日','時','腹','体','資金'],cardLabels:['名前','在留資格','日','場所','空腹','健康','仕事','資金'],hint:'ENTER to speak · *asterisks* for actions · Hint ¥500',times:{morning:'朝',afternoon:'昼',evening:'夕方',night:'夜'},none:'無職 · none'},
+  china:{brand:'人生',destination:'选择目的地',play:'开始游戏',note:'请用中文或拼音说话。你的故事会随着你的话语展开。',speak:'说话',listen:'🔊 聆听',speechError:'音声错误',thinking:'对方正在思考',card:'居留卡',back:'← 返回故事',country:'RESIDENCE CARD · 中国',government:'中华人民共和国',people:'人物关系',vocab:'已学词汇',labels:['天数','时间','饥饿','健康','资金'],cardLabels:['姓名','身份','天数','地点','饥饿','健康','工作','资金'],hint:'ENTER to speak · *asterisks* for actions · Hint ¥500',times:{morning:'早晨',afternoon:'下午',evening:'傍晚',night:'夜晚'},none:'无业'},
+  korea:{brand:'인생',destination:'어디에서 시작할까요?',play:'시작하기',note:'한국어나 로마자로 말해 보세요. 당신의 이야기는 당신의 말로 시작됩니다.',speak:'말하기',listen:'🔊 듣기',speechError:'음성 오류',thinking:'상대가 생각하고 있어요',card:'외국인등록증',back:'← 이야기로',country:'RESIDENCE CARD · 대한민국',government:'대한민국 정부',people:'인간관계',vocab:'배운 단어',labels:['날짜','시간','허기','건강','자금'],cardLabels:['이름','체류 자격','날짜','장소','허기','건강','직업','자금'],hint:'ENTER to speak · *asterisks* for actions · Hint ¥500',times:{morning:'아침',afternoon:'오후',evening:'저녁',night:'밤'},none:'무직'},
+  hanja:{brand:'人生',destination:'어떤 삶을 시작할까요?',play:'始作하기',note:'한글로 대답해도 괜찮습니다. 등장인물의 漢字語를 문맥 속에서 배워 보세요.',speak:'말하기',listen:'듣기',speechError:'음성 오류',thinking:'相對가 생각하고 있어요',card:'人生 기록증',back:'← 이야기로',country:'LIFE RECORD · 韓國 漢字篇',government:'大韓民國',people:'人物 관계',vocab:'배운 漢字語',labels:['日','時','허기','健康','資金'],cardLabels:['姓名','狀態','日','場所','허기','健康','職業','資金'],hint:'ENTER to speak · *asterisks* for actions · Hint ₩500',times:{morning:'아침',afternoon:'午後',evening:'夕方',night:'夜間'},none:'無職'}
 };
 const locale=()=>LOCALES[S.country]||LOCALES.japan;
 const languageDescription=()=>S.country==='hanja'?({
@@ -932,6 +969,65 @@ function enterGameRoute(){
 }
 window.addEventListener('popstate',()=>window.location.reload());
 
+let dictionaryRequest=0, dictionaryReturnFocus=null;
+function dictionaryLanguage(){ return S.country==='japan'?'ja':S.country==='china'?'zh':'ko'; }
+function enableDictionaryText(element,text){
+  if(!element || !text) return;
+  element.textContent='';
+  let parts;
+  try{
+    const segmenter=new Intl.Segmenter(dictionaryLanguage(),{granularity:'word'});
+    parts=[...segmenter.segment(text)].map(part=>({text:part.segment,word:part.isWordLike}));
+  }catch(e){
+    parts=text.split(/(\s+|[.,!?。、！？…「」『』（）()])/u).filter(Boolean).map(part=>({text:part,word:/[\p{L}\p{N}\p{Script=Han}]/u.test(part)}));
+  }
+  parts.forEach(part=>{
+    if(!part.word || !/[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}\p{Script=Hangul}]/u.test(part.text)){
+      element.appendChild(document.createTextNode(part.text)); return;
+    }
+    const button=document.createElement('button');
+    button.type='button'; button.className='dict-token'; button.dataset.dictTerm=part.text;
+    button.title='Look up in dictionary'; button.textContent=part.text;
+    element.appendChild(button);
+  });
+}
+function closeDictionary(){
+  $('dictionary-modal').classList.add('hide');
+  if(dictionaryReturnFocus?.isConnected) dictionaryReturnFocus.focus();
+}
+async function openDictionary(term,trigger){
+  dictionaryReturnFocus=trigger||document.activeElement;
+  $('dictionary-query').textContent=term;
+  $('dictionary-body').innerHTML='<div class="dictionary-loading">Searching the local dictionary…</div>';
+  $('dictionary-modal').classList.remove('hide');
+  const requestId=++dictionaryRequest;
+  try{
+    const r=await fetch(`/api/dictionary?country=${encodeURIComponent(S.country)}&term=${encodeURIComponent(term)}`);
+    const data=await r.json();
+    if(requestId!==dictionaryRequest) return;
+    if(!r.ok) throw new Error(data.error||'Lookup failed');
+    const stem=data.normalized&&data.normalized!==data.query
+      ? `<div class="dictionary-stem">Dictionary form: ${esc(data.normalized)}</div>`:'';
+    const results=data.results?.length ? data.results.map(result=>
+      `<article class="dictionary-result"><div class="dictionary-reading">${esc(result.term)}${result.reading?` · ${esc(result.reading)}`:''}</div><div class="dictionary-definition">${esc(result.definition)}</div></article>`
+    ).join('') : '<div class="dictionary-empty">No matching entry was found.</div>';
+    $('dictionary-body').innerHTML=stem+results+`<div class="dictionary-source">${esc(data.source)} · ${esc(data.license)}</div>`;
+  }catch(e){
+    if(requestId===dictionaryRequest) $('dictionary-body').innerHTML='<div class="dictionary-empty">The dictionary could not be loaded.</div>';
+  }
+}
+$('dictionary-close').onclick=closeDictionary;
+document.querySelector('#dictionary-modal .dictionary-backdrop').onclick=closeDictionary;
+document.addEventListener('click',event=>{
+  const target=event.target.closest('[data-dict-term]');
+  if(target) openDictionary(target.dataset.dictTerm,target);
+});
+document.addEventListener('keydown',event=>{
+  if(event.key==='Escape'&&!$('dictionary-modal').classList.contains('hide')) closeDictionary();
+  const target=event.target.closest?.('[data-dict-term]');
+  if(target&&(event.key==='Enter'||event.key===' ')){ event.preventDefault(); openDictionary(target.dataset.dictTerm,target); }
+});
+
 function renderVocabReview(){
   const list=$('vocab-review-list');
   const count=$('vocab-review-count');
@@ -941,7 +1037,7 @@ function renderVocabReview(){
     return;
   }
   list.innerHTML=S.vocab.map(w=>
-    `<article class="vocab-card"><div class="vocab-card-jp">${esc(w.jp)}</div>`+
+    `<article class="vocab-card"><button type="button" class="vocab-card-jp dict-term" data-dict-term="${esc(w.jp)}">${esc(w.jp)}</button>`+
     `<div class="vocab-card-romaji">${esc(w.romaji||'')}</div>`+
     `<div class="vocab-card-en">${esc(w.en||'')}</div></article>`).join('');
 }
@@ -1257,6 +1353,7 @@ function resumeGame(save,lifeId){
   enterGameRoute();
   $('sb-hc-badge').classList.toggle('hide', !S.hardcore);
   stream.innerHTML = save.streamHTML || '';
+  stream.querySelectorAll('.npc .jp').forEach(node=>enableDictionaryText(node,node.textContent));
   (S.stamps||[]).forEach(label=>{
     const h=document.createElement('div'); h.className='hanko';
     h.style.setProperty('--rot',(Math.random()*16-8).toFixed(1)+'deg');
@@ -1315,7 +1412,7 @@ async function speak(){
 async function turn(playerText, directive){
   S.busy = true; $('send').disabled = true;
   const think = document.createElement('div');
-  think.className='thinking'; think.innerHTML='相手が考えている <span>·</span><span>·</span><span>·</span>';
+  think.className='thinking'; think.innerHTML=`${locale().thinking} <span>·</span><span>·</span><span>·</span>`;
   stream.appendChild(think); scrollDown(true);
 
   const spendNote = S.hintSpend ? `\nNOTE: the player paid ¥${S.hintSpend} for phrase hints (already deducted in CURRENT STATE — carry the yen figure forward, do not re-deduct).` : '';
@@ -1514,7 +1611,7 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
   sections = parseSections(buf);
   updateLive();
   if(narrDiv) narrDiv.classList.remove('live');
-  if(npcJp) npcJp.classList.remove('live');
+  if(npcJp){ npcJp.classList.remove('live'); enableDictionaryText(npcJp,npcJp.textContent); }
 
   finalizeTurn(sections, playerText!==null);
   if(!sceneImageStarted){
@@ -1716,7 +1813,7 @@ function renderCard(){
   const vl=$('vocab-list');
   if(S.vocab.length){
     vl.innerHTML=S.vocab.slice(0,30).map(w=>
-      `<div class="w"><span class="jp">${esc(w.jp)}</span> <span class="gloss">${esc(w.romaji||'')} — ${esc(w.en||'')}</span></div>`).join('');
+      `<div class="w"><button type="button" class="jp dict-term" data-dict-term="${esc(w.jp)}">${esc(w.jp)}</button> <span class="gloss">${esc(w.romaji||'')} — ${esc(w.en||'')}</span></div>`).join('');
   } else vl.innerHTML='<span class="empty-note">Words appear here as you meet them.</span>';
   if(!$('vocab-review').classList.contains('hide')) renderVocabReview();
 }

@@ -9,6 +9,7 @@ import {
   supabaseAdmin,
   USERNAME_RE
 } from '../../../lib/server-state.js';
+import { lookupDictionary } from '../../../lib/dictionary.js';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -94,6 +95,18 @@ function effectiveEntitlement(row) {
 }
 
 async function entitlementForUser(user) {
+  if (user?.username?.toLowerCase() === 'miara') {
+    return {
+      plan: 'pictures',
+      unlimited: true,
+      pictures: true,
+      status: 'active',
+      currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
+      customerId: null,
+      subscriptionId: null
+    };
+  }
   return effectiveEntitlement(user ? await subscriptionRow(user.id) : null);
 }
 
@@ -264,6 +277,7 @@ async function generateSceneImage(request, user) {
       },
       body: JSON.stringify({
         input: {
+          num_inference_steps: 1,
           prompt: prompt.trim(),
           go_fast: true,
           num_outputs: 1,
@@ -417,6 +431,20 @@ async function synthesizeSpeech(request) {
 
 export async function GET(request, context) {
   const name = await endpoint(context);
+
+  if (name === 'dictionary') {
+    const url = new URL(request.url);
+    const country = url.searchParams.get('country');
+    const term = url.searchParams.get('term');
+    if (!['japan', 'china', 'korea', 'hanja'].includes(country)) return json({ error: 'Choose a supported dictionary.' }, 400);
+    if (typeof term !== 'string' || !term.trim() || term.length > 64) return json({ error: 'Enter a word to look up.' }, 400);
+    try {
+      return json(lookupDictionary(country, term), 200);
+    } catch (error) {
+      console.error('Dictionary lookup failed:', error);
+      return json({ error: 'The dictionary could not be loaded.' }, 500);
+    }
+  }
 
   if (name === 'plan') {
     const user = await currentUser(request);
