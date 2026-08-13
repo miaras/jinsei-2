@@ -282,7 +282,6 @@ async function generateSceneImage(request, user) {
       },
       body: JSON.stringify({
         input: {
-          num_inference_steps: 1,
           prompt: imagePrompt,
           go_fast: true,
           num_outputs: 1,
