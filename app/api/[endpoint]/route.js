@@ -247,7 +247,7 @@ async function generateSceneImage(request, user) {
   const imageLocale = imageLocales[country];
   if (!imageLocale) return json({ error: 'A valid country is required.' }, 400);
   const scenePrompt = prompt.trim().split(/\s+/).slice(0, 100).join(' ');
-  const portraitDirection = ' Include an attractive adult as a prominent principal subject, clearly visible in the foreground or middle ground.';
+  const portraitDirection = ' Include an attractive adult as a prominent principal subject, clearly visible in the foreground or middle ground. Clothes should be partially revealing, such as hanging off the shoulders or have cleavage.';
   const imagePrompt = `${imageLocale}: ${scenePrompt}${portraitDirection}`.slice(0, 1000);
   if (typeof lifeId !== 'string' || !/^[0-9a-f-]{36}$/i.test(lifeId)) return json({ error: 'A valid life id is required.' }, 400);
   if (!Number.isInteger(turnNumber) || turnNumber < 0) return json({ error: 'A valid turn number is required.' }, 400);
