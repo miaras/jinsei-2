@@ -275,6 +275,11 @@ async function generateSceneImage(request, user) {
   if (reserveError) throw reserveError;
 
   try {
+    console.info('[jinsei:image-prompt]', {
+      lifeId,
+      turnNumber,
+      prompt: imagePrompt
+    });
     const predictionResponse = await fetch('https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions', {
       method: 'POST',
       headers: {
