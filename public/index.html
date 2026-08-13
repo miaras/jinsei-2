@@ -937,8 +937,14 @@ async function refreshPlan(){
   }catch(e){}
   renderPlanUI();
 }
-function openPlans(){ renderPlanUI(); $('plans').classList.remove('hide'); }
-function closePlans(){ $('plans').classList.add('hide'); }
+function setPriceURL(isOpen){
+  const url=new URL(location.href);
+  if(isOpen) url.searchParams.set('price','true');
+  else url.searchParams.delete('price');
+  history.replaceState(null,'',url.pathname+url.search+url.hash);
+}
+function openPlans(){ renderPlanUI(); $('plans').classList.remove('hide'); setPriceURL(true); }
+function closePlans(){ $('plans').classList.add('hide'); setPriceURL(false); }
 function openLegal(path){
   const key=String(path).replace(/^\//,'').replace(/\/$/,'');
   const template=$(`legal-${key}`);
@@ -984,6 +990,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('legal-modal').c
 $('buy-unlimited').onclick=()=>startCheckout('unlimited');
 $('buy-pictures').onclick=()=>startCheckout('pictures');
 $('manage-billing').onclick=openBillingPortal;
+if(new URLSearchParams(location.search).get('price')==='true') requestAnimationFrame(openPlans);
 
 function openAuth(fromMidGame){
   midGameAuth=!!fromMidGame;
