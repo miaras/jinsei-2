@@ -50,7 +50,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | Variable | Required | Default | Description |
 | --- | --- | --- | --- |
 | `OPENROUTER_API_KEY` | Yes | — | Server-side key used for generated game turns. |
-| `OPENROUTER_MODEL` | No | `deepseek/deepseek-v4-flash:nitro` | OpenRouter model used by the turn endpoint. The server adds `:nitro` when it is omitted to prioritize high-throughput providers. |
+| `OPENROUTER_MODEL` | No | `deepseek/deepseek-v4-flash` | OpenRouter model used by the turn endpoint. Requests prioritize low-latency providers for faster time to first token. |
 | `GOOGLE_TTS_API_KEY` | Yes for speech | — | Server-side Google Cloud key with the Text-to-Speech API enabled. |
 | `PADDLE_API_KEY` | Yes for billing | — | Server-side Paddle API key with transaction and customer-portal permissions. |
 | `PADDLE_WEBHOOK_SECRET` | Yes for billing | — | Signature secret for `/api/paddle-webhook`. |

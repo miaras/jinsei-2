@@ -517,6 +517,76 @@ aside{
   color:var(--ink-soft);font-family:var(--mono);font-size:11px;padding:6px 10px;
 }
 .mobile-story-back:hover{border-color:var(--ai);color:var(--ai)}
+
+/* ============ 2026 VISUAL SYSTEM: NIGHT TRANSIT ============ */
+:root{
+  --paper:#0B0D0C;
+  --paper-deep:#131713;
+  --ink:#F2F5EC;
+  --ink-soft:#9CA59B;
+  --ai:#C8FF35;
+  --ai-soft:#24320F;
+  --shu:#FF5C35;
+  --line:#30372F;
+  --ok:#52E68A;
+  --disp:"Arial Narrow","Aptos Display","Helvetica Neue",sans-serif;
+  --body:Inter,"Helvetica Neue",Arial,"Zen Kaku Gothic New",sans-serif;
+  --mono:"IBM Plex Mono","SFMono-Regular",Consolas,monospace;
+}
+html[data-theme="china"]{--paper:#0D0B0B;--paper-deep:#181111;--ink:#FFF3ED;--ink-soft:#B8A29B;--ai:#FF563D;--ai-soft:#351512;--shu:#FFCA3A;--line:#3E2D2A;--ok:#62E6A1}
+html[data-theme="korea"],html[data-theme="hanja"]{--paper:#090D0F;--paper-deep:#10191D;--ink:#F0F8F8;--ink-soft:#97A9AD;--ai:#60F0D2;--ai-soft:#10322F;--shu:#FF6B5E;--line:#2D3B3E;--ok:#60F0D2}
+body{background-color:var(--paper);background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);background-size:32px 32px;color:var(--ink)}
+button,input{border-radius:0}
+button{transition:background-color .16s,color .16s,border-color .16s,transform .16s}
+button:active{transform:translateY(1px)}
+
+#setup{position:relative;align-items:stretch;justify-content:flex-start;padding:0;min-height:100dvh;background:radial-gradient(circle at 12% 8%,rgba(200,255,53,.12),transparent 26%),var(--paper)}
+#setup::before{content:"JINSEI / LIFE SIMULATION";position:fixed;z-index:1;top:20px;left:28px;font:500 10px/1 var(--mono);letter-spacing:.18em;color:var(--ai)}
+#setup::after{content:"TOKYO  35.6762° N  /  139.6503° E";position:fixed;z-index:1;top:20px;right:28px;font:400 9px/1 var(--mono);letter-spacing:.12em;color:var(--ink-soft)}
+#setup>.setup-sub:first-child{order:1;align-self:flex-start;margin:clamp(96px,14vh,150px) 5vw 0;color:var(--ai);font:500 11px/1 var(--mono);letter-spacing:.18em;text-align:left}
+.setup-title{order:2;align-self:flex-start;margin:10px 5vw 0;font-family:var(--body);font-size:clamp(86px,19vw,260px);font-weight:900;line-height:.72;letter-spacing:-.085em;text-align:left;color:var(--ink)}
+.setup-title::after{content:"01";display:inline-block;margin-left:.06em;vertical-align:top;font:500 clamp(12px,1.5vw,20px)/1 var(--mono);letter-spacing:0;color:var(--ai)}
+#setup>.setup-sub:nth-of-type(2){order:3;align-self:flex-start;margin:24px 5vw 0;color:var(--ink);font:800 clamp(18px,2vw,30px)/1 var(--body);letter-spacing:.42em;text-align:left}
+.setup-lede{order:4;max-width:520px;margin:20px 5vw 48px;text-align:left;font-size:clamp(15px,1.4vw,19px);line-height:1.55;color:var(--ink-soft)}
+.setup-card{order:5;width:auto;margin:0 5vw;display:grid;grid-template-columns:minmax(180px,.7fr) minmax(340px,1.3fr);column-gap:clamp(28px,5vw,76px);background:transparent;border:0;border-top:1px solid var(--line);padding:36px 0 48px;box-shadow:none}
+#continue-block{grid-column:1/-1!important;margin-bottom:30px!important;padding-bottom:30px!important;border-bottom:1px solid var(--line)!important}
+.field-label{font-size:9px;letter-spacing:.2em;color:var(--ai);margin:0 0 10px}
+#name-input{grid-column:1;margin:0 0 24px;background:transparent;border:0;border-bottom:1px solid var(--line);color:var(--ink);font-size:24px;font-weight:650;padding:8px 0 12px}
+#name-input::placeholder{color:#525A52}
+#name-input:focus{outline:0;border-bottom-color:var(--ai)}
+#destination-label,#destinations,#language-label,#levels{grid-column:2}
+#destination-label{grid-row:2}#destinations{grid-row:3/6}#language-label{grid-row:6}#levels{grid-row:7}
+.levels{gap:1px;background:var(--line);border:1px solid var(--line);margin:0 0 24px}
+.level-btn{position:relative;border:0;background:var(--paper);color:var(--ink);padding:16px 12px;min-height:76px;text-align:left;box-shadow:none!important;transform:none!important}
+.level-btn::after{content:"";position:absolute;right:10px;top:10px;width:6px;height:6px;border:1px solid var(--ink-soft);border-radius:50%}
+.level-btn .jp{font-family:var(--body);font-weight:800;font-size:20px}.level-btn .en{font-family:var(--mono);font-size:9px;line-height:1.3;color:var(--ink-soft)}
+.level-btn:hover{background:#171B17}.level-btn.sel{background:var(--ai);color:#0B0D0C}.level-btn.sel::after{background:#0B0D0C;border-color:#0B0D0C}.level-btn.sel .en{color:#34420E}
+#begin-btn{grid-column:1/-1;margin-top:10px;background:var(--ai);color:#090B08;min-height:62px;font-family:var(--body);font-size:15px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+#begin-btn:hover{background:var(--ink);color:var(--paper)}
+.setup-note{grid-column:1/-1;font-family:var(--mono);font-size:10px;color:var(--ink-soft)}
+.main-footer{order:6;padding:18px 5vw 36px;text-align:left;border-top:1px solid var(--line)}
+.legal-links{justify-content:flex-start}.legal-links a{color:var(--ink-soft);text-decoration:none}.legal-links a:hover{color:var(--ai)}
+
+#statusbar{height:42px;padding:0 18px;background:var(--ai);color:#0A0C09;border-bottom:1px solid #0A0C09;font-size:11px}
+.sb-brand{font-family:var(--body);font-weight:950;font-size:16px;letter-spacing:-.04em}.sb-item{border-color:rgba(0,0,0,.18)}.sb-label,.sb-save{color:rgba(0,0,0,.52)}.sb-val,.sb-val.yen{color:#0A0C09}.sb-plan{background:#0A0C09;color:var(--ai);border-color:#0A0C09}.sb-home,.sb-logout{border-color:rgba(0,0,0,.3);color:#0A0C09}
+#game{height:calc(100dvh - 42px);margin-top:42px}#game.on{grid-template-columns:minmax(0,1fr) 330px}
+main{border-color:var(--line)}header{padding:13px 24px;border-color:var(--line);background:rgba(11,13,12,.92)}.brand{font-family:var(--body);font-size:19px;font-weight:950;letter-spacing:-.04em}.brand::after{content:" / STORY FEED";font:500 9px/1 var(--mono);letter-spacing:.15em;color:var(--ai)}
+#hud{font-size:10px}.entry{max-width:720px;margin-bottom:30px}.narr{font-family:var(--body);font-size:17px;line-height:1.78}.narr em{color:var(--ai)}
+.scene-img{border:0;border-left:4px solid var(--ai);background:var(--paper-deep)}
+.npc{margin-top:18px;padding:14px 18px;border-left:1px solid var(--ai);background:var(--ai-soft)}.npc .who{font-size:9px}.npc .jp{font-family:var(--body);font-size:20px;font-weight:750}.npc .en{border-color:var(--line)}
+.you .bubble{background:var(--ai);color:#0B0D0C;font-weight:650;padding:11px 16px}.you .bubble.action{background:transparent;color:var(--ink-soft);border:1px solid var(--line)}
+.feedback{background:var(--paper-deep);border:1px solid var(--line)}.feedback .better{font-family:var(--body)}
+#dock{padding:14px 22px 18px;border-color:var(--line);background:rgba(11,13,12,.96)}.chip{background:transparent;border-color:var(--line);color:var(--ink-soft)}.chip:hover{background:var(--ai-soft)}
+#say{height:50px;background:var(--paper-deep);border:1px solid var(--line);color:var(--ink);font-size:15px}#say:focus{outline:0;border-color:var(--ai)}#send{min-width:112px;background:var(--ai);color:#0A0C09;font-family:var(--body);font-weight:900;font-size:13px}#send:hover{background:var(--ink);color:var(--paper)}
+aside{padding:20px;background:#0F120F;border-left:1px solid var(--line)}.card{background:transparent;border:1px solid var(--line);box-shadow:none}.card-head{border-color:var(--ai);background:var(--ai);color:#0A0C09}.card-head .t{font-family:var(--body);font-weight:950}.card-head .g{color:rgba(0,0,0,.6)}.crow{border-color:var(--line)}.meter{border-color:var(--line);background:#212721}.panel h3,.crow .k{color:var(--ink-soft)}
+.vocab-panel:hover,.vocab-panel:focus-visible,.vocab-card{background:var(--paper-deep);border-color:var(--line)}
+.setup-card#auth-card,.setup-card#plans-card{display:block;width:min(760px,100%);margin:0;background:var(--paper-deep);border:1px solid var(--line);padding:32px;box-shadow:10px 10px 0 #000}.auth-backdrop,.plans-backdrop,.legal-backdrop,.dictionary-backdrop{background:rgba(0,0,0,.78)}
+#auth-card input{background:var(--paper);color:var(--ink);border-color:var(--line)}.auth-tab,.plan-card,#legal-card,#dictionary-card{background:var(--paper-deep);color:var(--ink);border-color:var(--line);box-shadow:none}.auth-tab.sel{background:var(--ai);color:#0A0C09}.plan-card.featured{border-color:var(--ai);box-shadow:4px 4px 0 var(--ai-soft)}
+
+@media(max-width:720px){
+  #setup::after{display:none}#setup::before{left:18px}.setup-title{margin-left:18px;font-size:clamp(84px,32vw,150px)}#setup>.setup-sub:first-child,#setup>.setup-sub:nth-of-type(2),.setup-lede{margin-left:18px;margin-right:18px}.setup-card{display:block;margin:0 18px;padding-top:26px}.main-footer{padding-left:18px}.levels{grid-template-columns:1fr 1fr!important}.level-btn{min-height:72px}.setup-lede{margin-bottom:34px}
+  #game.on{grid-template-columns:1fr}#stream{padding:22px 16px 8px}#dock{padding:12px 12px 14px}.dock-hint{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.inrow{gap:6px}#send{min-width:74px;padding:0 12px}
+}
 </style>
 </head>
 <body>
@@ -772,34 +842,13 @@ const S = {
 };
 const HINT_COST = 500;
 const DESTINATIONS = {
-  japan:{country:'Japan',language:'Japanese',script:'日本語',romanization:'rōmaji',cash:180000,currency:'¥',currencyName:'yen',visa:'Temporary Visitor (90 days)',lede:'Begin somewhere unexpected in Japan with ¥180,000 and whatever Japanese you carry in your head.',starts:[
-    {location:'a rain-darkened kissaten in Koenji',time:'evening',hook:'a handwritten notice on the next table seems meant for you'},
-    {location:'a nearly empty local-train platform outside Matsumoto',time:'morning',hook:'the station clock has stopped and the next train is not on the board'},
-    {location:'a narrow used-book shop beside Kyoto’s Takase River',time:'afternoon',hook:'the owner has set aside a book bearing your name'},
-    {location:'a coin laundry beneath the Sapporo tram line',time:'night',hook:'your only dry clothes are turning slowly behind the glass'},
-    {location:'a seaside shotengai in Onomichi',time:'afternoon',hook:'a shopkeeper mistakes you for the person expected to help today'}]},
-  china:{country:'China',language:'Mandarin Chinese',script:'中文',romanization:'pinyin',cash:8000,currency:'¥',currencyName:'yuan',visa:'Temporary Visitor',lede:'Begin somewhere unexpected in China with ¥8,000 and whatever Mandarin you carry in your head.',starts:[
-    {location:'a tiled teahouse at the end of a Chengdu alley',time:'afternoon',hook:'a rainstorm has trapped everyone inside together'},
-    {location:'a twenty-four-hour bookshop near Shanghai’s Suzhou Creek',time:'night',hook:'a returned notebook contains an address written in your hand'},
-    {location:'a quiet hutong breakfast stall in Beijing',time:'morning',hook:'the owner serves you an order you did not place'},
-    {location:'the upper landing of a hillside stairway in Chongqing',time:'evening',hook:'your map insists the building in front of you is a street'},
-    {location:'a small ferry pier on Hangzhou’s Grand Canal',time:'morning',hook:'the last passenger has left behind a sealed parcel'}]},
-  korea:{country:'Korea',language:'Korean',script:'한국어',romanization:'romanization',cash:800000,currency:'₩',currencyName:'won',visa:'Temporary Visitor (90 days)',lede:'Begin somewhere unexpected in Korea with ₩800,000 and whatever Korean you carry in your head.',starts:[
-    {location:'a late-night laundromat in Mangwon-dong',time:'night',hook:'a stranger’s abandoned phone keeps ringing beside you'},
-    {location:'a small hanok library in Jeonju',time:'afternoon',hook:'the librarian believes you volunteered for today’s reading'},
-    {location:'a windswept bus stop above Busan’s Huinnyeoul coast',time:'evening',hook:'the final bus has passed without stopping'},
-    {location:'a covered market alley in Daegu',time:'morning',hook:'one stall opens only after its owner calls you by name'},
-    {location:'a rooftop garden overlooking Euljiro',time:'evening',hook:'you came to return a key but no one admits owning it'}]},
-  hanja:{country:'Korea',language:'Korean',script:'한글·漢字 혼용',romanization:'Hangul reading',cash:800000,currency:'₩',currencyName:'won',visa:'Temporary Visitor (90 days)',lede:'한국어 속 漢字語를 배우며, 소설 같은 뜻밖의 장소에서 삶을 시작합니다.',starts:[
-    {location:'서촌의 오래된 한옥 서점',time:'afternoon',hook:'주인이 당신 앞으로 맡겨진 낡은 字典을 건넨다'},
-    {location:'비 내리는 종로의 인쇄소 골목',time:'evening',hook:'문 닫은 인쇄소 안에서 아직 활자 찍는 소리가 난다'},
-    {location:'경주 남산 아래 작은 찻집',time:'morning',hook:'차와 함께 이름 모를 古文書 한 장이 놓인다'},
-    {location:'인천 개항장의 헌책 창고',time:'afternoon',hook:'분류되지 않은 상자에 당신 이름의 한자가 적혀 있다'},
-    {location:'대전행 무궁화호의 조용한 마지막 객차',time:'night',hook:'맞은편 좌석에 주인 없는 日記가 펼쳐져 있다'}]}
+  japan:{country:'Japan',language:'Japanese',script:'日本語',romanization:'rōmaji',cash:180000,currency:'¥',currencyName:'yen',visa:'Temporary Visitor (90 days)',lede:'Begin somewhere unexpected in Japan with ¥180,000 and whatever Japanese you carry in your head.'},
+  china:{country:'China',language:'Mandarin Chinese',script:'中文',romanization:'pinyin',cash:8000,currency:'¥',currencyName:'yuan',visa:'Temporary Visitor',lede:'Begin somewhere unexpected in China with ¥8,000 and whatever Mandarin you carry in your head.'},
+  korea:{country:'Korea',language:'Korean',script:'한국어',romanization:'romanization',cash:800000,currency:'₩',currencyName:'won',visa:'Temporary Visitor (90 days)',lede:'Begin somewhere unexpected in Korea with ₩800,000 and whatever Korean you carry in your head.'},
+  hanja:{country:'Korea',language:'Korean',script:'한글·漢字 혼용',romanization:'Hangul reading',cash:800000,currency:'₩',currencyName:'won',visa:'Temporary Visitor (90 days)',lede:'한국어 속 漢字語를 배우며, 소설 같은 뜻밖의 장소에서 삶을 시작합니다.'}
 };
 const SAVE_CARD_COLORS = { japan:'#2E5077', china:'#A92E27', korea:'#2F684D', hanja:'#2F684D' };
 const destination=()=>DESTINATIONS[S.country]||DESTINATIONS.japan;
-const randomStart=()=>{const starts=destination().starts;return starts[Math.floor(Math.random()*starts.length)];};
 function parseCurrencyAmount(value){
   if(typeof value==='number') return Number.isFinite(value)?value:null;
   if(typeof value!=='string'||!value.trim()) return null;
@@ -1411,11 +1460,10 @@ async function start(){
   $('statusbar').classList.remove('hide');
   enterGameRoute();
   const d=destination();
-  const opening=randomStart();
-  S.state={ day:1, time:opening.time, location:opening.location, yen:d.cash, hunger:85, health:100, alive:true, job:null, visa:d.visa, relationships:[], appearances:{}, flags:[`Opening: ${opening.hook}`] };
+  S.state={ day:1, time:'afternoon', location:'', yen:d.cash, hunger:85, health:100, alive:true, job:null, visa:d.visa, relationships:[], appearances:{}, flags:[] };
   renderCard();
   await saveGame();
-  await turn(null, `[GAME START] Begin in medias res at ${opening.location}, Day 1, ${opening.time}, with ${d.currency}${d.cash.toLocaleString()}, hunger 85, and health 100. Story hook: ${opening.hook}. This is NOT an airport or arrival scene. Open like the first page of a grounded contemporary novel: make the location tactile and specific, explain only as much as feels natural, and let the first NPC encounter emerge from the hook. The player must use ${d.language} to navigate it. Give suggestions suited to their level.`);
+  await turn(null, `[GAME START] Generate a brand-new opening for this life. Invent a fresh, specific location somewhere in ${d.country}, choose a fitting time of day, and create an original immediate story hook. Do not select from a predefined list or default to an airport, arrival scene, or the country's most obvious tourist landmark. Begin in medias res like the first page of a grounded contemporary novel: make the generated location tactile and locally credible, explain only as much as feels natural, and let the first NPC encounter emerge from the hook. Set STATE.location and STATE.time to the location and time you generate, and record a concise version of the opening hook in STATE.flags. It is Day 1; set funds to ${d.cash}, hunger to 85, health to 100, and visa to "${d.visa}". The player must use ${d.language} to navigate the scene. Give suggestions suited to their level.`);
 }
 
 /* ================= SIGN-UP NUDGE (guest players, after their 10th turn) ================= */
@@ -1679,10 +1727,10 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
      into the system prompt — keeping stale copies in history is pure waste. */
   const storedAssistant = buf.replace(/@@SUMMARY@@[\s\S]*?(?=@@END@@|$)/,'');
   S.history.push({role:'assistant', content:storedAssistant});
-  /* Keep the last 16 turns verbatim (2 messages each = 32). Everything older
+  /* Keep the last 6 turns verbatim (2 messages each = 12). Everything older
      is dropped from the raw window but preserved in S.summary, which is
      rebuilt every turn and injected into the system prompt above. */
-  if(S.history.length > 32) S.history = S.history.slice(-32);
+  if(S.history.length > 12) S.history = S.history.slice(-12);
 
   if(playerText!==null) S.turnCount = (S.turnCount||0) + 1;
   maybeShowSignupNudge();

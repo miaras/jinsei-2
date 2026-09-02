@@ -18,7 +18,9 @@ export const maxDuration = 300;
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const BASE_MODEL = process.env.OPENROUTER_MODEL || 'deepseek/deepseek-v4-flash';
-const MODEL = BASE_MODEL.endsWith(':nitro') ? BASE_MODEL : `${BASE_MODEL}:nitro`;
+// Prefer a quick first token for this interactive UI. OpenRouter's `:nitro`
+// variant sorts by generation throughput, which can still have a slow TTFT.
+const MODEL = BASE_MODEL.replace(/:nitro$/, '');
 const FREE_TURN_LIMIT = 20;
 const IMAGE_TIMEOUT_MS = 5 * 60 * 1000;
 const GUEST_USAGE_COOKIE = 'jinsei_guest_usage';
@@ -706,7 +708,8 @@ export async function POST(request, context) {
           model: MODEL,
           messages: [{ role: 'system', content: system }, ...messages],
           max_tokens: 1000,
-          stream: true
+          stream: true,
+          provider: { sort: 'latency' }
         }),
         signal: request.signal
       });
