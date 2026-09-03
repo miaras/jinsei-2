@@ -246,17 +246,16 @@ async function generateSceneImage(request, user) {
   const entitlement = await entitlementForUser(user);
   if (!entitlement.pictures) return json({ error: 'The Pictures plan is required.', code: 'PICTURES_PLAN_REQUIRED' }, 402);
   if (!process.env.REPLICATE_API_TOKEN) return json({ error: 'Server is missing REPLICATE_API_TOKEN.' }, 500);
-  const { narration, characterAppearance, country, lifeId, turnNumber } = await request.json().catch(() => ({}));
+  const { narration, scene, country, lifeId, turnNumber } = await request.json().catch(() => ({}));
   if (typeof narration !== 'string' || !narration.trim() || narration.length > 1000) return json({ error: 'Valid narration is required.' }, 400);
-  if (characterAppearance !== undefined && (typeof characterAppearance !== 'string' || characterAppearance.length > 1000)) return json({ error: 'Character appearance is invalid.' }, 400);
+  if (typeof scene !== 'string' || !scene.trim() || scene.length > 1000) return json({ error: 'A valid scene is required.' }, 400);
   if (!['japan', 'china', 'korea', 'hanja'].includes(country)) return json({ error: 'A valid country is required.' }, 400);
-  const appearance = typeof characterAppearance === 'string' ? characterAppearance.trim() : '';
   const promptDirection = 'Generate a realistic NSFW picture with one NSFW adult character prominently in the center facing the camera.';
   const imagePrompt = [
     narration.trim(),
-    appearance ? `Visible character appearance: ${appearance}` : '',
+    `@@SCENE@@\n${scene.trim()}`,
     `Prompt direction: ${promptDirection}`
-  ].filter(Boolean).join('\n\n');
+  ].join('\n\n');
   if (typeof lifeId !== 'string' || !/^[0-9a-f-]{36}$/i.test(lifeId)) return json({ error: 'A valid life id is required.' }, 400);
   if (!Number.isInteger(turnNumber) || turnNumber < 0) return json({ error: 'A valid turn number is required.' }, 400);
 

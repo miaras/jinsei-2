@@ -1829,17 +1829,6 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
 }
 
 /* ================= PAID SCENE IMAGE ================= */
-function rememberedCharacterAppearance(){
-  const appearances=S.state&&S.state.appearances;
-  if(!appearances || typeof appearances!=='object') return '';
-  return Object.entries(appearances).map(([name,profile])=>{
-    if(!profile || typeof profile!=='object') return `${name}: ${String(profile||'')}`;
-    const clothing=Array.isArray(profile.clothing)
-      ? profile.clothing.map(item=>typeof item==='string'?item:[item.article,item.color,item.details].filter(Boolean).join(' ')).join(', ')
-      : String(profile.clothing||'');
-    return `${name}: ${[profile.face,profile.hair,profile.height,clothing].filter(Boolean).join('; ')}`;
-  }).filter(Boolean).join('\n').slice(0,1000);
-}
 async function promotePersistedImage(img,generationId,objectUrl){
   const savedUrl=`/api/generated-image?id=${encodeURIComponent(generationId)}`;
   for(let attempt=0;attempt<30;attempt++){
@@ -1866,12 +1855,11 @@ async function promotePersistedImage(img,generationId,objectUrl){
     }
   }
 }
-async function attachSceneImage(wrap, narration, characterAppearance, turnNumber){
+async function attachSceneImage(wrap, narration, scene, turnNumber){
   try{
-    const appearance=(characterAppearance||'').trim() || rememberedCharacterAppearance();
     const r = await fetch('/api/image', {
       method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin',
-      body: JSON.stringify({ narration, characterAppearance:appearance, country:S.country, lifeId:S.lifeId, turnNumber })
+      body: JSON.stringify({ narration, scene, country:S.country, lifeId:S.lifeId, turnNumber })
     });
     if(!r.ok) throw new Error('image request failed');
     const responseType=r.headers.get('content-type')||'';
