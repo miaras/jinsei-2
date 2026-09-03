@@ -281,10 +281,95 @@ header{
 #hud{font-family:var(--mono);font-size:12px;color:var(--ink-soft);letter-spacing:.06em}
 #hud b{color:var(--ink);font-weight:500}
 
+/* ============ IMAGE MODEL SWITCH SLIDER ============ */
+.model-switch-wrap{
+  display:inline-flex;align-items:center;gap:7px;margin-left:auto;
+  font-family:var(--mono);user-select:none;
+}
+.model-switch-label{
+  font-size:9.5px;letter-spacing:.12em;color:var(--ink-soft);text-transform:uppercase;font-weight:600;
+}
+.model-slider-btn{
+  position:relative;display:inline-flex;cursor:pointer;
+  border:1px solid var(--line);background:var(--paper-deep);
+  border-radius:14px;padding:2px;outline:none;
+  transition:border-color .15s ease,box-shadow .15s ease;
+  box-shadow:inset 0 1px 2px rgba(0,0,0,0.06);
+}
+.model-slider-btn:hover,.model-slider-btn:focus-visible{
+  border-color:var(--ink);
+}
+.model-slider-track{
+  position:relative;display:flex;align-items:center;
+  height:24px;border-radius:12px;overflow:hidden;
+}
+.model-slider-pill{
+  position:absolute;top:0;bottom:0;width:50%;left:0;
+  background:var(--ink);border-radius:11px;
+  transition:transform .24s cubic-bezier(0.4, 0, 0.2, 1),background .24s ease;
+  box-shadow:0 1px 3px rgba(0,0,0,0.22);
+  pointer-events:none;
+}
+.model-slider-btn.flux .model-slider-pill{
+  transform:translateX(100%);
+  background:var(--ai);
+}
+.model-opt-btn{
+  position:relative;z-index:1;background:none;border:none;padding:0 10px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;font-weight:500;
+  color:var(--ink-soft);line-height:24px;cursor:pointer;outline:none;
+  transition:color .2s ease;white-space:nowrap;
+}
+.model-slider-btn:not(.flux) .model-opt-wai{
+  color:var(--paper);font-weight:700;
+}
+.model-slider-btn.flux .model-opt-flux{
+  color:var(--paper);font-weight:700;
+}
+
+/* ============ NSFW SLIDER BUTTON ============ */
+.nsfw-slider-btn{
+  position:relative;display:inline-flex;cursor:pointer;
+  border:1px solid var(--line);background:var(--paper-deep);
+  border-radius:14px;padding:2px;outline:none;
+  transition:border-color .15s ease,box-shadow .15s ease;
+  box-shadow:inset 0 1px 2px rgba(0,0,0,0.06);
+}
+.nsfw-slider-btn:hover,.nsfw-slider-btn:focus-visible{
+  border-color:var(--ink);
+}
+.nsfw-slider-track{
+  position:relative;display:flex;align-items:center;
+  height:24px;border-radius:12px;overflow:hidden;
+}
+.nsfw-slider-pill{
+  position:absolute;top:0;bottom:0;width:50%;left:0;
+  background:var(--ink-soft);border-radius:11px;
+  transition:transform .24s cubic-bezier(0.4, 0, 0.2, 1),background .24s ease;
+  box-shadow:0 1px 3px rgba(0,0,0,0.22);
+  pointer-events:none;
+}
+.nsfw-slider-btn.on .nsfw-slider-pill{
+  transform:translateX(100%);
+  background:var(--shu);
+}
+.nsfw-opt-btn{
+  position:relative;z-index:1;background:none;border:none;padding:0 8px;
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;font-weight:600;
+  color:var(--ink-soft);line-height:24px;cursor:pointer;outline:none;
+  transition:color .2s ease;white-space:nowrap;
+}
+.nsfw-slider-btn:not(.on) .nsfw-opt-off{
+  color:var(--paper);font-weight:700;
+}
+.nsfw-slider-btn.on .nsfw-opt-on{
+  color:var(--paper);font-weight:700;
+}
+
 #stream{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:26px 26px 10px}
 .entry{max-width:640px;margin:0 auto 22px}
 .scene-img{
-  width:100%;aspect-ratio:16/9;margin-bottom:14px;overflow:hidden;
+  width:100%;aspect-ratio:1/1;margin-bottom:14px;overflow:hidden;
   border:1px solid var(--line);background:var(--paper-deep);
 }
 .scene-img img{
@@ -296,8 +381,8 @@ header{
   background:linear-gradient(100deg,var(--paper-deep) 40%,#EFE8D6 50%,var(--paper-deep) 60%);
   background-size:200% 100%;animation:shimmer 1.6s ease-in-out infinite;
 }
-.scene-debug{margin:14px 0 0;padding:10px 12px;border:1px dashed var(--line);background:rgba(0,0,0,.035);color:var(--ink-soft);font:11px/1.55 var(--mono);white-space:pre-wrap;overflow-wrap:anywhere}
-.scene-debug::before{content:'DEBUG · SCENE';display:block;margin-bottom:6px;color:var(--shu);font-weight:700;letter-spacing:.12em}
+.scene-debug{margin:18px 0 0;padding:12px 14px;border:1px dashed var(--line);background:rgba(0,0,0,.035);color:var(--ink-soft);font:11px/1.55 var(--mono);white-space:pre-wrap;overflow-wrap:anywhere;max-height:240px;overflow-y:auto;position:relative;clear:both;display:block;box-sizing:border-box}
+.scene-debug::before{content:'DEBUG · LLM RESPONSE';display:block;margin-bottom:8px;color:var(--shu);font-weight:700;letter-spacing:.12em;position:sticky;top:0;background:var(--paper);padding:2px 0 4px;z-index:2}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 @media (prefers-reduced-motion: reduce){ .scene-img.loading{animation:none} }
 .narr{font-family:var(--disp);font-size:16.5px;line-height:1.85;color:var(--ink)}
@@ -507,8 +592,14 @@ aside{
   .sb-save,.sb-plan,.sb-home,.sb-logout{display:none}
   header{padding:6px 10px;gap:7px;flex-wrap:nowrap;align-items:center;min-height:34px}
   .brand{font-size:15px;line-height:1;letter-spacing:.04em}
-  #hud{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;line-height:1.2}
   .cardtoggle{flex:0 0 auto;margin-left:auto;padding:2px 6px;font-size:9px;white-space:nowrap}
+  .model-switch-label{display:none}
+  .model-opt-btn{padding:0 6px;font-size:9.5px;line-height:20px}
+  .model-slider-track{height:20px}
+  .model-slider-pill{border-radius:9px}
+  .nsfw-opt-btn{padding:0 5px;font-size:8.5px;line-height:20px}
+  .nsfw-slider-track{height:20px}
+  .nsfw-slider-pill{border-radius:9px}
 }
 .cardtoggle{
   display:none;margin-left:auto;background:none;border:1px solid var(--line);
@@ -636,7 +727,7 @@ button{letter-spacing:.01em}
 main{border-color:var(--line);background:var(--paper)}
 header{min-height:56px;padding:0 27px;border-color:var(--line);background:rgba(242,239,232,.95);align-items:center}.brand{font:700 19px/1 var(--disp);letter-spacing:.05em}.brand::after{content:" / WORLD";font:500 8px/1 var(--mono);letter-spacing:.16em;color:var(--ink-soft)}#hud{margin-left:auto;font-size:9px;letter-spacing:.09em}
 #stream{padding:42px 28px 16px}.entry{max-width:690px;margin-bottom:38px}.entry::before{content:"FIELD NOTE";display:block;margin-bottom:10px;font:500 8px/1 var(--mono);letter-spacing:.18em;color:var(--ink-soft)}
-.narr{font:500 clamp(17px,1.55vw,21px)/1.9 var(--disp)}.narr em{color:var(--shu);font-style:normal}.scene-img{aspect-ratio:16/8.5;border:0;border-bottom:1px solid var(--ink);filter:none}.scene-img img{filter:saturate(.62) contrast(.96) sepia(.08)}
+.narr{font:500 clamp(17px,1.55vw,21px)/1.9 var(--disp)}.narr em{color:var(--shu);font-style:normal}.scene-img{aspect-ratio:1/1;border:0;border-bottom:1px solid var(--ink);filter:none}.scene-img img{filter:saturate(.62) contrast(.96) sepia(.08)}
 .npc{margin-top:20px;padding:15px 0 2px 22px;border-left:2px solid var(--shu);background:transparent}.npc .who{font-size:8px;color:var(--shu)}.npc .jp{font:600 21px/1.8 var(--disp)}.npc .en{border-color:var(--line)}
 .reveal-btn{border:0;border-bottom:1px solid var(--line);padding:3px 0}.you .bubble{background:var(--ink);color:var(--paper);padding:10px 15px}.you .bubble.action{background:transparent;color:var(--ink-soft);border:1px solid var(--line)}
 .feedback{background:transparent;border:0;border-left:1px solid var(--line);padding:5px 0 5px 13px}.feedback.miss{border-color:var(--shu)}.feedback .better{font-family:var(--disp)}
@@ -817,6 +908,24 @@ aside{padding:18px;background:var(--paper-deep);border-left:0}.card{background:r
     <header>
       <a class="brand" href="/" aria-label="Back to main page">人生</a>
       <span id="hud"></span>
+      <div class="model-switch-wrap" id="model-switch-wrap" title="Image Generation Controls">
+        <span class="model-switch-label">MODEL</span>
+        <div class="model-slider-btn" id="model-slider-btn" role="group" aria-label="Image Generation Model">
+          <div class="model-slider-track">
+            <span class="model-slider-pill"></span>
+            <button type="button" class="model-opt-btn model-opt-wai" id="model-opt-wai">Illustrious</button>
+            <button type="button" class="model-opt-btn model-opt-flux" id="model-opt-flux">Flux.1</button>
+          </div>
+        </div>
+        <span class="model-switch-label" style="margin-left:4px">NSFW</span>
+        <div class="nsfw-slider-btn" id="nsfw-slider-btn" role="switch" aria-checked="false" title="Toggle NSFW mode (adds ', sex' to prompt)">
+          <div class="nsfw-slider-track">
+            <span class="nsfw-slider-pill"></span>
+            <button type="button" class="nsfw-opt-btn nsfw-opt-off" id="nsfw-opt-off">OFF</button>
+            <button type="button" class="nsfw-opt-btn nsfw-opt-on" id="nsfw-opt-on">ON</button>
+          </div>
+        </div>
+      </div>
       <button class="cardtoggle" id="cardtoggle">在留カード</button>
     </header>
     <div id="stream"></div>
@@ -983,20 +1092,24 @@ HANJA MODE — critical:
 `:'';
 
 const sceneEnabled=()=>CURRENT_PLAN.pictures || (CURRENT_USER||'').toLowerCase()==='miara';
-const imageContinuityRules=()=>sceneEnabled()?`
-IMAGE CHARACTER CONTINUITY:
-- Include at least one attractive adult who is naturally present in the current scene. Make that person a prominent principal subject—not a tiny, distant, obscured, or incidental background figure—and frame their face and body clearly enough to establish their identity.
-- STATE.appearances is the permanent character-profile registry. Create an entry immediately for EVERY named person introduced in the story, including ${S.name}; do this whether or not that person appears in the current image. Never delete an existing entry.
-- Every profile must be an object with detailed face, height, hair, personality, and clothing fields. Face must describe apparent age, face shape, skin tone, eyes, brows, nose, mouth, and distinguishing features. Height must give an approximate measurement and build/posture. Hair must give color, length, texture, and style. Personality must record stable traits and mannerisms.
-- Clothing must be an array enumerating every article worn in the person's current outfit, with at least 5 entries. Each entry must name the article, exact color, material/cut/pattern, and distinctive details. Include layers, bottoms, footwear, and visible accessories; never collapse an outfit into phrases such as "casual clothes." Update clothing only when the story actually establishes that the person changed clothes, while preserving face, height, hair, and personality.
-- On every later appearance, reuse the stored physical traits and current clothing closely. Never silently change or omit identity details. When a profile from an older save is incomplete or a legacy string, expand it into the full structured format on the next turn.
-- Never use a real public figure or celebrity as a visual reference.
-`:'';
-const sceneOutputFormat=()=>sceneEnabled()?`@@SCENE@@
+// const imageContinuityRules=()=>sceneEnabled()?`
+// IMAGE CHARACTER CONTINUITY:
+// - Include at least one attractive adult who is naturally present in the current scene. Make that person a prominent principal subject—not a tiny, distant, obscured, or incidental background figure—and frame their face and body clearly enough to establish their identity.
+// - STATE.appearances is the permanent character-profile registry. Create an entry immediately for EVERY named person introduced in the story, including ${S.name}; do this whether or not that person appears in the current image. Never delete an existing entry.
+// - Every profile must be an object with detailed face, height, hair, personality, and clothing fields. Face must describe apparent age.  Hair must give color, length, texture, and style. Personality must record stable traits and mannerisms.
+// - Clothing should note five articles of clothing the character is wearing with the colors for each.
+// - On every later appearance, reuse the stored physical traits and current clothing closely. Never silently change or omit identity details. When a profile from an older save is incomplete or a legacy string, expand it into the full structured format on the next turn.
+// - Never use a real public figure or celebrity as a visual reference.
+// `:'';
+const imageContinuityRules = () => "";
+/*const sceneOutputFormat=()=>sceneEnabled()?`@@SCENE@@
 (visual character descriptions only. For each visible character, give their name followed by face, hair, build, and current clothing, reusing STATE.appearances and memory exactly. Be concise. Do not mention location, background, objects, action, pose, lighting, weather, composition, or mood.)
+`:'';*/
+const sceneOutputFormat=()=>sceneEnabled()?`@@SCENE@@
+(current environment such as location, including character names and five articles of clothing, hair style, hair color for an image model to use as a prompt; do NOT return prose, return a comma-separated list of features the image should depict)
 `:'';
-const appearancesStateFormat=()=>sceneEnabled()?',"appearances":{"character name":{"face":"apparent age, shape, skin, eyes, brows, nose, mouth, distinguishing features","height":"approximate measurement, build, posture","hair":"color, length, texture, style","personality":"stable traits and mannerisms","clothing":[{"article":"specific garment/accessory","color":"precise color","details":"material, cut, pattern, condition, distinctive features"}]}}':'';
-
+//const appearancesStateFormat=()=>sceneEnabled()?',"appearances":{"character name":{"face":"apparent age, shape, skin, eyes, brows, nose, mouth, distinguishing features","height":"approximate measurement, build, posture","hair":"color, length, texture, style","personality":"stable traits and mannerisms","clothing":[{"article":"specific garment/accessory","color":"precise color","details":"material, cut, pattern, condition, distinctive features"}]}}':'';
+const appearancesStateFormat=()=>"";
 const SYSTEM = () => `You are the game engine of 人生 (JINSEI), a slice-of-life text adventure set in present-day ${destination().country} that doubles as a ${destination().language} teacher. The player, ${S.name}, has just moved to ${destination().country} alone and must build an entire life — job hunting, apartment, friendships, romance, maybe marriage, visa renewals, festivals, illness, everything — over months of in-game time. The player's ${destination().language} level: ${languageDescription()}
 
 ${S.summary ? `STORY SO FAR (a running summary of everything that happened before the recent messages below — the recent message history is truncated to save space, so THIS is your memory of earlier events; treat it as canon and keep continuity with it):\n${S.summary}\n` : ''}
@@ -1008,14 +1121,17 @@ ACTIONS: Text wrapped in asterisks is a physical action, not speech — e.g. *wa
 - Never choose or perform an intentional action for the player. You control the world and NPCs, but the player controls their own body and decisions.
 
 STORY RULES:
-- ${S.hardcore ? `Recognizably ${destination().country} — its transit, food, bureaucracy, neighborhoods, and seasons — but tonally unstable: specific and concrete in its details, uncanny and often darkly funny in how those details behave.` : `Grounded, warm, specific. Real neighborhoods, transit, food, city paperwork, seasons, and social customs in ${destination().country}. Small moments matter.`}
+- This is a sex-obsessed world. User can try to have sex with any of the characters. The characters are all very horny and will want to have sex with the user immediately, even if they're in public.
 - Continue long arcs across turns using the state and history provided. Introduce recurring NPCs with names and personalities; deepen relationships gradually (level 1-5).
 - Advance time realistically. Spend and earn ${destination().currencyName} realistically (rent, food, wages). If money runs low, life gets hard.
 - Award a "milestone" ONLY for major life events: FIRST FRIEND, GOT A JOB, APARTMENT, FIRST DATE, PROMOTION, ENGAGED, MARRIED, VISA RENEWED, DIED, etc. (short, in caps, max 3 words). Otherwise write NONE.
 - Teach: NPC lines should be natural for the player's level, and each turn introduce 0-2 genuinely useful words.
 - Judge the player's ${destination().language} in FEEDBACK: UNDERSTOOD yes/partial/no. Give ONE short coaching NOTE and, if helpful, a corrected/improved sentence in BETTER (${destination().language} + ${destination().romanization} in parentheses). Be encouraging, never pedantic. If there is no player utterance to judge, write UNDERSTOOD: none, NOTE: none, BETTER: none.
 - Keep everything SHORT. Narration 2-3 sentences. One NPC line per turn, 1-2 sentences.${sceneEnabled()?' The NARRATION text is also used directly as the image-generation prompt, so make it visually concrete: establish the place, lighting, visible people, objects, action, and mood without writing a separate image prompt.':''}
+- The SCENE text should not be prose. It should return five articles of clothing of the NPC, their hair length and hair color.
 - Every turn must include a conversation with an NPC. Always include @@NPC@@ with a natural line addressed to the player, and let that line create the opening for the player's next reply. Never end narration or dialogue with a meta-instruction, an action menu, or a yes/no action prompt.
+
+
 
 ${imageContinuityRules()}
 
@@ -1025,12 +1141,11 @@ SURVIVAL — HUNGER, HEALTH, DEATH: This life has real stakes. Track "hunger" an
 - Health can also drop directly from illness or injury — see WORLD TONE below. If health reaches 0, the player dies. Write a${S.hardcore ? ' final NARRATION that stays in this world\'s register — it can be as understated, absurd, or darkly funny as everything else, but never gratuitous or graphic' : ' somber, dignified, non-graphic final NARRATION (no gore, no suffering lingered on)'}, set "alive":false in STATE, and set MILESTONE to DIED. Do not continue the story after this; the game ends here.
 - These numbers move gradually and telegraphed — never a sudden 0 out of nowhere with no warning across prior turns. The player should generally see it coming if they're paying attention to their own state.
 
-${S.hardcore ? `WORLD TONE — HARDCORE (鬼畜モード): This is not a friendly world, and it is not even a reliably sane one. It is recognizably Japan, but the ground rules are unstable and often absurd: a form is rejected for a reason that flatly contradicts what an official told the player five minutes earlier; an office the player must visit has moved floors overnight, or no longer seems to exist; an official's name or face is subtly different the second time the player meets them and no one else finds this strange. NPCs can be uncannily calm about impossible things, overly formal in absurd circumstances, or speak in riddles and non sequiturs the player still must parse and respond to correctly in Japanese. Time and space can bend slightly — a five-minute train ride might swallow an afternoon, a hallway might loop back on itself. Luck is actively unfriendly, and misfortune is more frequent and sometimes disproportionate to anything the player did. Play this for dark, deadpan comedy — Kafka doing a bit, not despair. The LANGUAGE GATE stays completely real regardless of how strange things get: absurdity never lets English work, and correct Japanese remains the player's sharpest tool, just no longer any guarantee of a fair outcome. Keep it coherent and legible turn to turn even when it's strange — the player should always be able to tell what just happened, even if they can't tell why.` : `WORLD TONE — hostile and a little arbitrary: This is not a friendly tutorial world. Japan should sometimes be unfair, indifferent, or bureaucratic in ways the player didn't cause and can't always talk their way out of, even with correct Japanese — a shop closes early without warning, a train is suspended, a landlord is unreasonable, paperwork gets rejected on a technicality, someone is simply rude. Occasionally (not every turn — sparingly, so it lands) something bad happens with no fair warning: minor food poisoning from a sketchy stand, a cold caught on a packed train, a slip on icy stairs, a wallet lightened by a pickpocket. These should feel like real texture, not punishment for a specific mistake, and should never be so frequent or severe that the game feels unwinnable or sadistic — Japanese competence should still be the player's single best tool for building a stable life, just not an absolute shield against bad luck.`}
 
 COUNTRY PRIORITY: The selected destination is ${destination().country}. Every place, institution, social custom, currency, language correction, immigration rule, and daily detail MUST belong to ${destination().country}. Do not mention Japan, Japanese, yen, or Japanese-specific institutions unless the selected destination is Japan.
 
-OUTPUT FORMAT — critical: your output is displayed to the player character-by-character as you generate it (streaming), so narration and NPC speech must appear FIRST, in the order the player should see them, before any structured data. Respond in PLAIN TEXT ONLY — no markdown, no code fences, no JSON wrapper around the whole thing — using EXACTLY these markers, each alone on its own line, in this exact order. @@NPC@@ is mandatory on every turn.${sceneEnabled()?' @@SCENE@@ is mandatory and must contain only the minimal character description requested below.':' Do not output @@SCENE@@.'} Every other section must always appear; write NONE where nothing applies.
-
+OUTPUT FORMAT — @@SCENE@@ should come FIRST. Respond in PLAIN TEXT ONLY — no markdown, no code fences, no JSON wrapper around the whole thing — using EXACTLY these markers, each alone on its own line, in this exact order. You must generate ALL sections through to @@END@@ on every turn without stopping early: @@SCENE@@, @@NARRATION@@, @@NPC@@, @@STATE@@, @@FEEDBACK@@, @@VOCAB@@, @@SUGGESTIONS@@, @@MILESTONE@@, and @@END@@ are all required.${sceneEnabled()?' @@SCENE@@ is mandatory and must contain only the minimal character description requested below.':' Do not output @@SCENE@@.'} Write NONE where a section does not apply. 
+${sceneOutputFormat()}
 @@NARRATION@@
 (2-3 sentences, second person, English, present tense)
 @@NPC@@
@@ -1038,7 +1153,9 @@ NAME: (npc name or role)
 JP: (${destination().language} line)
 ROMAJI: (${destination().romanization} reading)
 EN: (English translation)
-${sceneOutputFormat()}@@FEEDBACK@@
+@@STATE@@
+(one single-line JSON object, no line breaks inside it: {"day":int,"time":"morning|afternoon|evening|night","location":"short place name","yen":int,"hunger":0-100,"health":0-100,"alive":true|false,"job":"job title or null","visa":"visa status","relationships":[{"name":"...","role":"...","level":1-5}]${appearancesStateFormat()},"flags":["short plot memory strings, max 10"]}.${sceneEnabled()?' Every person profile needs at least 5 clothing entries. Copy forward every existing person and every established detail.':''})
+@@FEEDBACK@@
 UNDERSTOOD: yes|partial|no|none
 NOTE: (one short coaching sentence, or none)
 BETTER: (improved ${destination().language} with ${destination().romanization} in parentheses, or none)
@@ -1046,15 +1163,11 @@ BETTER: (improved ${destination().language} with ${destination().romanization} i
 (0-2 lines, each exactly "jp | romaji | english meaning", or a single line NONE)
 @@SUGGESTIONS@@
 (2-3 short ${destination().romanization} phrases the player might try next, one per line)
-@@STATE@@
-(one single-line JSON object, no line breaks inside it: {"day":int,"time":"morning|afternoon|evening|night","location":"short place name","yen":int,"hunger":0-100,"health":0-100,"alive":true|false,"job":"job title or null","visa":"visa status","relationships":[{"name":"...","role":"...","level":1-5}]${appearancesStateFormat()},"flags":["short plot memory strings, max 10"]}.${sceneEnabled()?' Every person profile needs at least 5 clothing entries. Copy forward every existing person and every established detail.':''})
 @@MILESTONE@@
 (CAPS LABEL or NONE)
-@@SUMMARY@@
-(the updated STORY SO FAR: rewrite the running summary to fold in what just happened this turn. Keep it a tight, factual digest — named recurring people and how the player relates to them, the player's job/home/money situation, ongoing plot threads, promises made, and key past events — so a future turn can maintain continuity after older messages scroll out of the window. Prose or terse bullets, whichever is denser. Hard cap ~250 words: when it gets long, compress and drop trivia, never just append. This is invisible to the player; write it for your future self.)
 @@END@@
 
-Never deviate from this format, never add commentary before @@NARRATION@@ or after @@END@@. The state you return is the new authoritative state — update it every turn, carry forward what hasn't changed, and use flags as your plot memory. The SUMMARY you return replaces the previous STORY SO FAR wholesale, so it must stand on its own.`;
+Never deviate from this format, never add commentary before @@SCENE@@ or after @@END@@. The state you return is the new authoritative state — update it every turn, carry forward what hasn't changed, and use flags as your plot memory.`;
 /* ================= DOM ================= */
 const $ = id => document.getElementById(id);
 const stream = $('stream');
@@ -1104,7 +1217,8 @@ document.querySelectorAll('#world-toggle .level-btn').forEach(b=>{
   b.onclick=()=>{
     document.querySelectorAll('#world-toggle .level-btn').forEach(x=>x.classList.remove('sel'));
     b.classList.add('sel');
-    S.hardcore = (b.dataset.world==='hardcore');
+    //S.hardcore = (b.dataset.world==='hardcore');
+    S.hardcore = true;
     $('sb-hc-badge').classList.toggle('hide', !S.hardcore);
   };
 });
@@ -1208,7 +1322,15 @@ $('vocab-back').onclick=closeVocabReview;
 
 $('begin-btn').onclick=start;
 $('send').onclick=()=>speak();
-$('say').addEventListener('keydown',e=>{if(e.key==='Enter')speak();});
+$('say').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    e.preventDefault();
+    speak();
+  }
+});
+$('say').addEventListener('compositionend',()=>{
+  if(justSpoke) $('say').value='';
+});
 $('sb-home').onclick=()=>{ window.location.assign('/'); };
 
 /* ================= AUTH (optional — modal usable pre-game or mid-game) ================= */
@@ -1513,7 +1635,102 @@ function resumeGame(save,lifeId){
   });
   updateInputPrompt(); renderCard(); scrollDown(true); $('say').focus();
 }
+
+/* ================= IMAGE MODEL SWITCHER ================= */
+const IMAGE_MODELS = {
+  ILLUSTRIOUS: 'illustrious',
+  FLUX: 'flux'
+};
+
+function getImageModel(){
+  const saved = localStorage.getItem('jinsei_image_model');
+  return saved === IMAGE_MODELS.FLUX ? IMAGE_MODELS.FLUX : IMAGE_MODELS.ILLUSTRIOUS;
+}
+
+function setImageModel(model){
+  const valid = model === IMAGE_MODELS.FLUX ? IMAGE_MODELS.FLUX : IMAGE_MODELS.ILLUSTRIOUS;
+  localStorage.setItem('jinsei_image_model', valid);
+  const btn = $('model-slider-btn');
+  if(btn){
+    if(valid === IMAGE_MODELS.FLUX) btn.classList.add('flux');
+    else btn.classList.remove('flux');
+    btn.setAttribute('aria-valuenow', valid);
+  }
+}
+
+function initImageModelSwitch(){
+  const btn = $('model-slider-btn');
+  const optWai = $('model-opt-wai');
+  const optFlux = $('model-opt-flux');
+  if(!btn) return;
+
+  setImageModel(getImageModel());
+
+  optWai?.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    setImageModel(IMAGE_MODELS.ILLUSTRIOUS);
+  });
+  optFlux?.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    setImageModel(IMAGE_MODELS.FLUX);
+  });
+  btn.addEventListener('click', ()=>{
+    const cur = getImageModel();
+    setImageModel(cur === IMAGE_MODELS.FLUX ? IMAGE_MODELS.ILLUSTRIOUS : IMAGE_MODELS.FLUX);
+  });
+  btn.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowLeft' || e.key === 'ArrowRight'){
+      e.preventDefault();
+      const cur = getImageModel();
+      setImageModel(cur === IMAGE_MODELS.FLUX ? IMAGE_MODELS.ILLUSTRIOUS : IMAGE_MODELS.FLUX);
+    }
+  });
+}
+
+function getNsfwEnabled(){
+  return localStorage.getItem('jinsei_nsfw_enabled') === 'true';
+}
+
+function setNsfwEnabled(enabled){
+  localStorage.setItem('jinsei_nsfw_enabled', enabled ? 'true' : 'false');
+  const btn = $('nsfw-slider-btn');
+  if(btn){
+    if(enabled) btn.classList.add('on');
+    else btn.classList.remove('on');
+    btn.setAttribute('aria-checked', enabled ? 'true' : 'false');
+  }
+}
+
+function initNsfwSwitch(){
+  const btn = $('nsfw-slider-btn');
+  const optOff = $('nsfw-opt-off');
+  const optOn = $('nsfw-opt-on');
+  if(!btn) return;
+
+  setNsfwEnabled(getNsfwEnabled());
+
+  optOff?.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    setNsfwEnabled(false);
+  });
+  optOn?.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    setNsfwEnabled(true);
+  });
+  btn.addEventListener('click', ()=>{
+    setNsfwEnabled(!getNsfwEnabled());
+  });
+  btn.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowLeft' || e.key === 'ArrowRight'){
+      e.preventDefault();
+      setNsfwEnabled(!getNsfwEnabled());
+    }
+  });
+}
+
 initIdentity();
+initImageModelSwitch();
+initNsfwSwitch();
 
 async function start(){
   S.name = $('name-input').value.trim() || 'Traveler';
@@ -1532,11 +1749,11 @@ async function start(){
   const openingDirective=S.country==='japan'
     ? `[GAME START] Generate a brand-new opening for this life at Narita International Airport, Terminal 1 Arrivals, in the Tokyo area. The player has just arrived in Japan. Keep STATE.location at "Narita International Airport, Terminal 1 Arrivals" and STATE.time as "afternoon" for this opening turn. Create an original, immediate story hook grounded in the arrivals hall; make it tactile and locally credible, explain only as much as feels natural, and let the first NPC encounter emerge from the hook. Record a concise version of the opening hook in STATE.flags. It is Day 1; set funds to ${d.cash}, hunger to 85, health to 100, and visa to "${d.visa}". The player must use Japanese to navigate the scene. Give suggestions suited to their level.`
     : `[GAME START] Generate a brand-new opening for this life. Invent a fresh, specific location somewhere in ${d.country}, choose a fitting time of day, and create an original immediate story hook. Begin in medias res like the first page of a grounded contemporary novel: make the generated location tactile and locally credible, explain only as much as feels natural, and let the first NPC encounter emerge from the hook. Set STATE.location and STATE.time to the location and time you generate, and record a concise version of the opening hook in STATE.flags. It is Day 1; set funds to ${d.cash}, hunger to 85, health to 100, and visa to "${d.visa}". The player must use ${d.language} to navigate the scene. Give suggestions suited to their level.`;
-  await turn(null, openingDirective);
+  await enqueueTurn(null, openingDirective);
 }
 
 /* ================= SIGN-UP NUDGE (guest players, after their 10th turn) ================= */
-function maybeShowSignupNudge(){
+function maybeShowSignupNudge(anchor){
   if(CURRENT_USER || S.signupPrompted || S.turnCount<10) return;
   S.signupPrompted=true;
   const n=document.createElement('div'); n.className='signup-nudge';
@@ -1549,21 +1766,76 @@ function maybeShowSignupNudge(){
     </div>`;
   n.querySelector('.sn-yes').onclick=()=>{ n.remove(); openAuth(true); };
   n.querySelector('.sn-no').onclick=()=>{ n.remove(); saveGame(); };
-  stream.appendChild(n);
+  if(anchor && anchor.isConnected) anchor.after(n);
+  else stream.appendChild(n);
   scrollDown(true);
 }
 
 /* ================= TURN ENGINE ================= */
-async function speak(){
-  const t = $('say').value.trim();
-  if(!t || S.busy) return;
-  $('say').value='';
-  addYou(t);
-  await turn(t, null);
+let turnStateReady=Promise.resolve();
+let globalTurnId=0;
+
+function setComposerBusy(busy){
+  S.busy=busy;
+  $('send').disabled=busy;
 }
 
-async function turn(playerText, directive){
-  S.busy = true; $('send').disabled = true;
+function enqueueTurn(playerText,directive){
+  let resolveMyStateReady;
+  const myStateReady=new Promise(res=>{ resolveMyStateReady=res; });
+
+  /* Wait for the prior turn's @@STATE@@ to finish returning before
+     calling the LLM for this turn, ensuring STATE and history
+     are up-to-date while not blocking on subsequent non-essential sections. */
+  const task=turnStateReady.catch(()=>{}).then(()=>turn(playerText,directive,resolveMyStateReady));
+  turnStateReady=myStateReady;
+  task.catch(error=>{
+    resolveMyStateReady();
+    console.error('Turn processing failed:',error);
+  });
+  return task;
+}
+
+let justSpoke=false;
+function clearSayInput(){
+  if(justSpoke) $('say').value='';
+}
+
+function speak(){
+  const input=$('say');
+  const t=input.value.trim();
+  if(!t || S.busy) return;
+  /* Accept the reply immediately once the prior NPC has finished speaking.
+     Its request waits behind that turn's metadata task so STATE,
+     history, and image inputs cannot race with stale values. */
+  setComposerBusy(true);
+  justSpoke=true;
+  input.value='';
+
+  /* In Korean and other CJK IMEs, browsers emit a delayed compositionend or
+     trailing text insertion after the Enter keydown, re-inserting the last
+     composed syllable into the field. Clear across frames and microtasks. */
+  requestAnimationFrame(clearSayInput);
+  setTimeout(clearSayInput,0);
+  setTimeout(clearSayInput,20);
+  setTimeout(clearSayInput,80);
+  setTimeout(()=>{ justSpoke=false; },300);
+
+  addYou(t);
+  enqueueTurn(t, null);
+}
+
+async function turn(playerText, directive, onStateReady){
+  const myTurnId=++globalTurnId;
+  let stateReadyResolved=false;
+  function resolveStateReady(){
+    if(!stateReadyResolved){
+      stateReadyResolved=true;
+      if(typeof onStateReady==='function') onStateReady();
+    }
+  }
+
+  setComposerBusy(true);
   const think = document.createElement('div');
   think.className='thinking'; think.innerHTML=`${locale().thinking} <span>·</span><span>·</span><span>·</span>`;
   stream.appendChild(think); scrollDown(true);
@@ -1582,6 +1854,60 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
   let npcDiv=null, npcWho=null, npcJp=null, npcRomaji=null, npcEn=null;
   let buf='', sections={}, gotAnyText=false, thinkGone=false;
   let lastSceneDebugText='';
+  let composerReleased=false;
+  let stateCommitted=false;
+
+  function isStateDone(rawBuf, isDone=doneReading){
+    const re=/@@(NARRATION|NPC|FEEDBACK|VOCAB|SUGGESTIONS|SCENE|STATE|MILESTONE|END)@@/g;
+    const matches=[...rawBuf.matchAll(re)];
+    const stateIdx=matches.findIndex(m=>m[1]==='STATE');
+    if(stateIdx===-1) return false;
+    if(stateIdx < matches.length - 1) return true;
+    const stateStart = matches[stateIdx].index + matches[stateIdx][0].length;
+    const stateSlice = rawBuf.slice(stateStart);
+    const a = stateSlice.indexOf('{'), b = stateSlice.lastIndexOf('}');
+    if(a !== -1 && b !== -1 && b > a){
+      try {
+        JSON.parse(stateSlice.slice(a, b + 1));
+        return true;
+      } catch(e) {}
+    }
+    return isDone;
+  }
+
+  function maybeCommitState(rawBuf=buf){
+    if(stateCommitted) return;
+    if(!isStateDone(rawBuf, doneReading)) return;
+    stateCommitted=true;
+
+    const rawSections=parseSections(rawBuf);
+
+    if(rawSections.STATE){
+      try{
+        const a=rawSections.STATE.indexOf('{'), b=rawSections.STATE.lastIndexOf('}');
+        if(a!==-1 && b!==-1 && b>a){
+          S.state = normalizeCurrencyState(JSON.parse(rawSections.STATE.slice(a,b+1)),S.state);
+          renderCard();
+        }
+      }catch(e){}
+    }
+
+    S.history.push({role:'user', content:userMsg});
+    S.history.push({role:'assistant', content:rawBuf.trim()});
+    if(S.history.length > 12) S.history = S.history.slice(-12);
+
+    if(playerText!==null) S.turnCount = (S.turnCount||0) + 1;
+    saveGame();
+
+    resolveStateReady();
+  }
+
+  function releaseComposer(){
+    if(composerReleased || S.state.alive===false || myTurnId !== globalTurnId) return;
+    composerReleased=true;
+    setComposerBusy(false);
+    $('say').focus();
+  }
 
   function removeThink(){ if(!thinkGone){ think.remove(); thinkGone=true; } }
   function ensureEntry(){
@@ -1607,19 +1933,24 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
     const rb=document.createElement('button'); rb.className='reveal-btn'; rb.textContent='訳を見る';
     rb.onclick=()=>{npcDiv.classList.add('revealed'); rb.remove();};
     npcDiv.appendChild(npcWho); npcDiv.appendChild(npcJp); npcDiv.appendChild(npcRomaji); npcDiv.appendChild(npcEn); npcDiv.appendChild(rb);
-    entry.appendChild(npcDiv);
+    if(sceneDebug && sceneDebug.parentNode===entry){
+      entry.insertBefore(npcDiv, sceneDebug);
+    } else {
+      entry.appendChild(npcDiv);
+    }
   }
-  function updateSceneDebug(sourceSections){
-    if(sourceSections.SCENE===undefined || !sceneEnabled()) return;
-    if(sourceSections.SCENE===lastSceneDebugText) return false;
-    lastSceneDebugText=sourceSections.SCENE;
+  function updateSceneDebug(rawText=buf){
+    if(!sceneEnabled() || !rawText) return false;
+    if(rawText===lastSceneDebugText) return false;
+    lastSceneDebugText=rawText;
     ensureEntry();
     if(!sceneDebug){
       sceneDebug=document.createElement('pre');
       sceneDebug.className='scene-debug';
       entry.appendChild(sceneDebug);
     }
-    sceneDebug.textContent=sourceSections.SCENE;
+    sceneDebug.textContent=rawText;
+    sceneDebug.scrollTop=sceneDebug.scrollHeight;
     return true;
   }
   function updateLive(){
@@ -1641,9 +1972,14 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
       const nextRomaji=p.romaji||'', nextEn=p.en||'';
       if(npcRomaji.textContent!==nextRomaji){ npcRomaji.textContent=nextRomaji; changed=true; }
       if(npcEn.textContent!==nextEn){ npcEn.textContent=nextEn; changed=true; }
-      if(sections.SCENE!==undefined || sections.FEEDBACK!==undefined) npcJp.classList.remove('live');
+      const npcComplete=['STATE','FEEDBACK','VOCAB','SUGGESTIONS','MILESTONE','END']
+        .some(name=>sections[name]!==undefined);
+      if(npcComplete){
+        npcJp.classList.remove('live');
+        releaseComposer();
+      }
     }
-    if(updateSceneDebug(sections)) changed=true;
+    updateSceneDebug(buf);
     if(changed) scrollDown();
   }
 
@@ -1658,15 +1994,22 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
   let sceneImageStarted=false;
 
   function maybeStartSceneImage(sourceSections=sections){
-    /* @@FEEDBACK@@ proves that the short @@SCENE@@ block is complete. Start
-       from the raw buffer instead of waiting for the UI reveal to catch up. */
+    /* @@SCENE@@ comes first and @@NARRATION@@ immediately follows it.
+       The arrival of @@NARRATION@@ (or stream completion) proves that the
+       scene text is fully retrieved. */
     if(sceneImageStarted || !sceneWrap) return;
-    if(sourceSections.NARRATION!==undefined && sourceSections.SCENE!==undefined && sourceSections.FEEDBACK!==undefined){
+    if(sourceSections.SCENE!==undefined && (sourceSections.NARRATION!==undefined || doneReading)){
+      const sceneText=(sourceSections.SCENE||'').trim();
+      if(!sceneText || sceneText.toLowerCase()==='none'){
+        sceneImageStarted=true;
+        sceneWrap.remove();
+        return;
+      }
       sceneImageStarted=true;
       attachSceneImage(
         sceneWrap,
         (sourceSections.NARRATION||'').trim(),
-        (sourceSections.SCENE||'').trim(),
+        sceneText,
         imageTurnNumber
       );
     }
@@ -1744,9 +2087,10 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
           if(sceneEnabled()){
             ensureEntry();
             const rawSections=parseSections(buf);
-            if(updateSceneDebug(rawSections)) scrollDown();
+            updateSceneDebug(buf);
             maybeStartSceneImage(rawSections);
           }
+          maybeCommitState(buf);
           scheduleRender();
         }
       }
@@ -1756,6 +2100,12 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
     streamOk = gotAnyText; /* keep whatever partial content arrived */
   } finally {
     doneReading = true;
+    if(sceneEnabled()){
+      maybeStartSceneImage(parseSections(buf));
+      updateSceneDebug(buf);
+    }
+    maybeCommitState(buf);
+    resolveStateReady();
     scheduleRender(); /* ensures the reveal loop notices EOF even with nothing left to reveal */
   }
 
@@ -1764,12 +2114,13 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
   removeThink();
 
   if(!streamOk){
+    resolveStateReady();
     if(turnLimitReached){
       const d=document.createElement('div');
       d.className='feedback miss';
       d.innerHTML='<span class="fb-mark">20 TURN LIMIT</span>The free journey ends here. Choose a monthly plan to continue this life.';
       stream.appendChild(d); scrollDown(true);
-      S.busy=false; $('send').disabled=false; return;
+      releaseComposer(); return;
     }
     const d=document.createElement('div');
     d.className='feedback miss';
@@ -1780,18 +2131,19 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
       $('auth').classList.remove('hide');
       setAuthMode('login');
     } else {
-      d.innerHTML='<span class="fb-mark">接続エラー</span>The line went quiet — the connection failed.';
+      d.innerHTML='<span class="fb-mark">接続エラー</span>The connection failed.';
       const retry=document.createElement('button');
       retry.type='button'; retry.className='retry-turn'; retry.textContent='Try again';
       retry.onclick=async()=>{
         retry.disabled=true;
         d.remove();
-        await turn(playerText,directive);
+        setComposerBusy(true);
+        await enqueueTurn(playerText,directive);
       };
       d.appendChild(retry);
       stream.appendChild(d); scrollDown(true);
     }
-    S.busy=false; $('send').disabled=false; return;
+    releaseComposer(); return;
   }
 
   sections = parseSections(buf);
@@ -1804,28 +2156,38 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
     enableDictionaryText(npcJp,jpText);
   }
 
-  finalizeTurn(sections, playerText!==null);
-  if(!sceneImageStarted){
-    if(sceneWrap){
-      attachSceneImage(sceneWrap, (sections.NARRATION||'').trim(), (sections.SCENE||'').trim(), imageTurnNumber);
+  await processTurnMetadata({sections,playerText,userMsg,buf,entry,sceneWrap,sceneImageStarted,imageTurnNumber,stateCommitted});
+  releaseComposer();
+}
+
+/* Everything after the visible NPC exchange is deliberately handled by the
+   queued background task. The composer is already available while this
+   applies structured sections and starts image/persistence work. */
+async function processTurnMetadata({sections,playerText,userMsg,buf,entry,sceneWrap,sceneImageStarted,imageTurnNumber,stateCommitted}){
+  await Promise.resolve();
+  finalizeTurn(sections, playerText!==null, entry, stateCommitted);
+  if(!sceneImageStarted && sceneWrap){
+    attachSceneImage(sceneWrap, (sections.NARRATION||'').trim(), (sections.SCENE||'').trim(), imageTurnNumber);
+  }
+
+  if(!stateCommitted){
+    S.history.push({role:'user', content:userMsg});
+    S.history.push({role:'assistant', content:buf.trim()});
+    if(S.history.length > 12) S.history = S.history.slice(-12);
+
+    if(playerText!==null) S.turnCount = (S.turnCount||0) + 1;
+    saveGame();
+  } else {
+    // When stream completes, update the assistant message in S.history so it contains
+    // the complete turn including FEEDBACK, VOCAB, etc. for future few-shot context
+    const lastMsg = S.history[S.history.length - 1];
+    if(lastMsg && lastMsg.role === 'assistant'){
+      lastMsg.content = buf.trim();
+      saveGame();
     }
   }
 
-  S.history.push({role:'user', content:userMsg});
-  /* Strip the @@SUMMARY@@ block before storing: it can be long, it's
-     regenerated fresh every turn, and the latest one is already injected
-     into the system prompt — keeping stale copies in history is pure waste. */
-  const storedAssistant = buf.replace(/@@SUMMARY@@[\s\S]*?(?=@@END@@|$)/,'');
-  S.history.push({role:'assistant', content:storedAssistant});
-  /* Keep the last 6 turns verbatim (2 messages each = 12). Everything older
-     is dropped from the raw window but preserved in S.summary, which is
-     rebuilt every turn and injected into the system prompt above. */
-  if(S.history.length > 12) S.history = S.history.slice(-12);
-
-  if(playerText!==null) S.turnCount = (S.turnCount||0) + 1;
-  maybeShowSignupNudge();
-  saveGame();
-  S.busy=false; $('send').disabled=false;
+  maybeShowSignupNudge(entry);
 }
 
 /* ================= PAID SCENE IMAGE ================= */
@@ -1859,7 +2221,16 @@ async function attachSceneImage(wrap, narration, scene, turnNumber){
   try{
     const r = await fetch('/api/image', {
       method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin',
-      body: JSON.stringify({ narration, scene, country:S.country, lifeId:S.lifeId, turnNumber })
+      body: JSON.stringify({
+        narration,
+        scene,
+        appearances:S.state&&S.state.appearances||{},
+        country:S.country,
+        lifeId:S.lifeId,
+        turnNumber,
+        imageModel: getImageModel(),
+        nsfw: getNsfwEnabled()
+      })
     });
     if(!r.ok) throw new Error('image request failed');
     const responseType=r.headers.get('content-type')||'';
@@ -1895,7 +2266,7 @@ async function attachSceneImage(wrap, narration, scene, turnNumber){
 
 /* ================= SECTION PARSING ================= */
 function parseSections(buf){
-  const re=/@@(NARRATION|NPC|FEEDBACK|VOCAB|SUGGESTIONS|SCENE|STATE|MILESTONE|SUMMARY|END)@@/g;
+  const re=/@@(NARRATION|NPC|FEEDBACK|VOCAB|SUGGESTIONS|SCENE|STATE|MILESTONE|END)@@/g;
   const matches=[...buf.matchAll(re)];
   const secs={};
   for(let i=0;i<matches.length;i++){
@@ -1934,7 +2305,7 @@ function parseFeedbackBlock(text){
 }
 
 /* ================= FINALIZE (structured data, arrives after prose) ================= */
-function finalizeTurn(sections, hadPlayerTurn){
+function finalizeTurn(sections, hadPlayerTurn, entry, skipState=false){
   updateInputPrompt();
   if(hadPlayerTurn && sections.FEEDBACK){
     const fb=parseFeedbackBlock(sections.FEEDBACK);
@@ -1946,7 +2317,10 @@ function finalizeTurn(sections, hadPlayerTurn){
       const betterOk = fb.better && fb.better.toLowerCase()!=='none';
       f.innerHTML=`<span class="fb-mark">${mark}</span>${esc(fb.note||'')}`+
         (betterOk ? `<div class="better">→ ${esc(fb.better)}</div>` : '');
-      stream.appendChild(f);
+      const parent=entry||stream;
+      const debug=parent.querySelector?.('.scene-debug');
+      if(debug && debug.parentNode===parent) parent.insertBefore(f,debug);
+      else parent.appendChild(f);
     }
   }
 
@@ -1954,7 +2328,10 @@ function finalizeTurn(sections, hadPlayerTurn){
   if(milestone){
     const m=document.createElement('div');
     m.className='milestone-banner'; m.textContent='◆ '+milestone+' ◆';
-    stream.appendChild(m);
+    const parent=entry||stream;
+    const debug=parent.querySelector?.('.scene-debug');
+    if(debug && debug.parentNode===parent) parent.insertBefore(m,debug);
+    else parent.appendChild(m);
     addStamp(milestone);
   }
 
@@ -1967,16 +2344,13 @@ function finalizeTurn(sections, hadPlayerTurn){
     });
   }
 
-  if(sections.STATE){
-    try{
-      const a=sections.STATE.indexOf('{'), b=sections.STATE.lastIndexOf('}');
-      S.state = normalizeCurrencyState(JSON.parse(sections.STATE.slice(a,b+1)),S.state);
-    }catch(e){ /* keep prior state if malformed */ }
-  }
-
-  if(sections.SUMMARY){
-    const s=sections.SUMMARY.trim();
-    if(s && s.toUpperCase()!=='NONE') S.summary = s;
+  if(!skipState){
+    if(sections.STATE){
+      try{
+        const a=sections.STATE.indexOf('{'), b=sections.STATE.lastIndexOf('}');
+        S.state = normalizeCurrencyState(JSON.parse(sections.STATE.slice(a,b+1)),S.state);
+      }catch(e){ /* keep prior state if malformed */ }
+    }
   }
 
   $('chips').innerHTML='';

@@ -19,11 +19,16 @@ export const maxDuration = 300;
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const BASE_MODEL = process.env.OPENROUTER_MODEL || 'deepseek/deepseek-v4-flash';
+const IMAGE_CHARACTER_FILTER_MODEL = process.env.OPENROUTER_IMAGE_FILTER_MODEL || 'deepseek/deepseek-v4-flash';
 // Prefer a quick first token for this interactive UI. OpenRouter's `:nitro`
 // variant sorts by generation throughput, which can still have a slow TTFT.
 const MODEL = BASE_MODEL.replace(/:nitro$/, '');
 const FREE_TURN_LIMIT = 20;
-const REPLICATE_IMAGE_MODEL = 'aisha-ai-official/nsfw-flux-dev:fb4f086702d6a301ca32c170d926239324a7b7b2f0afc3d232a9c4be382dc3fa';
+const REPLICATE_IMAGE_MODELS = {
+  illustrious: 'aisha-ai-official/wai-nsfw-illustrious-v8:4d3aebd63448c9795a7b55b5e9a2b69433f1fd3437af5ef63b8ac6531ab269c9',
+  flux: 'aisha-ai-official/flux.1dev-uncensored-msfluxnsfw-v3:b477d8fc3a62e591c6224e10020538c4a9c340fb1f494891aff60019ffd5bc48'
+};
+const REPLICATE_IMAGE_MODEL = REPLICATE_IMAGE_MODELS.illustrious;
 const GUEST_USAGE_COOKIE = 'jinsei_guest_usage';
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(['active', 'trialing']);
 const anonTurnLog = new Map();
@@ -37,6 +42,56 @@ const VOICES = {
 
 function json(data, status = 200) {
   return NextResponse.json(data, { status });
+}
+
+function formatCharacterAppearance(name, profile) {
+  if (!profile || typeof profile !== 'object' || Array.isArray(profile)) return `${name}: ${String(profile || '')}`;
+  const clothing = Array.isArray(profile.clothing)
+    ? profile.clothing.map(item => typeof item === 'string'
+      ? item
+      : [item?.article, item?.color, item?.details].filter(Boolean).join(' ')).filter(Boolean).join(', ')
+    : String(profile.clothing || '');
+  return `${name}: ${[profile.face, profile.hair, profile.height, clothing].filter(Boolean).join('; ')}`;
+}
+
+async function relevantCharacterDescriptions(narration, scene, appearances, signal) {
+  if (!appearances || typeof appearances !== 'object' || Array.isArray(appearances)) return '';
+  const entries = Object.entries(appearances).filter(([name]) => name.trim()).slice(0, 50);
+  if (!entries.length || !process.env.OPENROUTER_API_KEY) return '';
+  const names = entries.map(([name]) => name);
+  const visibleText = `${narration}\n${scene}`.toLowerCase();
+  const fallbackNames = names.filter(name => visibleText.includes(name.toLowerCase()));
+  let selectedNames = fallbackNames;
+  try {
+    const response = await fetch(OPENROUTER_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        'X-Title': 'JINSEI Image Character Filter'
+      },
+      body: JSON.stringify({
+        model: IMAGE_CHARACTER_FILTER_MODEL,
+        messages: [
+          { role: 'system', content: 'Select ONE character physically visible in this scene. Return strict JSON: {"name":"exact registry name"}. Use only supplied registry names. Exclude characters who are merely remembered, mentioned, remote, or off-screen.' },
+          { role: 'user', content: JSON.stringify({ narration, scene, registryNames: names }) }
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0,
+        max_tokens: 120
+      }),
+      signal
+    });
+    if (!response.ok) throw new Error(`Character filter returned HTTP ${response.status}.`);
+    const payload = await response.json();
+    const parsed = JSON.parse(payload.choices?.[0]?.message?.content || '{}');
+    if (Array.isArray(parsed.names)) selectedNames = parsed.names.map(String);
+  } catch (error) {
+    console.error('Image character filtering failed:', error);
+  }
+  const selectedSet = new Set(selectedNames.map(name => name.toLowerCase()));
+  return entries.filter(([name]) => selectedSet.has(name.toLowerCase()))
+    .map(([name, profile]) => formatCharacterAppearance(name, profile)).join('\n').slice(0, 2000);
 }
 
 function appOrigin(request) {
@@ -246,16 +301,29 @@ async function generateSceneImage(request, user) {
   const entitlement = await entitlementForUser(user);
   if (!entitlement.pictures) return json({ error: 'The Pictures plan is required.', code: 'PICTURES_PLAN_REQUIRED' }, 402);
   if (!process.env.REPLICATE_API_TOKEN) return json({ error: 'Server is missing REPLICATE_API_TOKEN.' }, 500);
-  const { narration, scene, country, lifeId, turnNumber } = await request.json().catch(() => ({}));
-  if (typeof narration !== 'string' || !narration.trim() || narration.length > 1000) return json({ error: 'Valid narration is required.' }, 400);
-  if (typeof scene !== 'string' || !scene.trim() || scene.length > 1000) return json({ error: 'A valid scene is required.' }, 400);
+  const { narration = '', scene = '', appearances, country, lifeId, turnNumber, imageModel = 'illustrious', nsfw = false } = await request.json().catch(() => ({}));
+  if (narration !== undefined && narration !== null && (typeof narration !== 'string' || narration.length > 1000)) return json({ error: 'Valid narration is required.' }, 400);
+  if (scene !== undefined && scene !== null && (typeof scene !== 'string' || scene.length > 4000)) return json({ error: 'A valid scene is required.' }, 400);
+  if (appearances !== undefined && (!appearances || typeof appearances !== 'object' || Array.isArray(appearances) || JSON.stringify(appearances).length > 50_000)) return json({ error: 'Appearances are invalid.' }, 400);
   if (!['japan', 'china', 'korea', 'hanja'].includes(country)) return json({ error: 'A valid country is required.' }, 400);
-  const promptDirection = 'Generate a realistic NSFW picture with one NSFW adult character prominently in the center facing the camera.';
+  const sceneText = typeof scene === 'string' ? scene.trim() : '';
+  const promptText = sceneText || (typeof narration === 'string' ? narration.trim() : '');
+  if (!promptText) return json({ error: 'A valid scene or narration prompt is required.' }, 400);
+  const selectedModelKey = imageModel === 'flux' ? 'flux' : 'illustrious';
+  const selectedModelId = REPLICATE_IMAGE_MODELS[selectedModelKey];
+  console.log("Image model is " + selectedModelKey + " (" + selectedModelId + "), prompt: " + promptText);
+  //const characterDescriptions = await relevantCharacterDescriptions(narration.trim(), sceneText, appearances, request.signal);
+  const characterDescriptions = "";
+  //const promptDirection = 'NSFW, cleavage, sex, oral sex, anal sex, lesbian, futa, pussy, BDSM, porn, one character';
+  //const promptDirection = 'cleavage, sex, anal sex, BDSM, hardcore porn, hentai'
+  const isNsfw = nsfw === true || nsfw === 'true' || nsfw === 1 || nsfw === '1';
+  let promptDirection = 'cleavage';
+  if (isNsfw) promptDirection += ', sex, anal sex, BDSM, hardcore porn, hentai';
   const imagePrompt = [
-    narration.trim(),
-    `@@SCENE@@\n${scene.trim()}`,
-    `Prompt direction: ${promptDirection}`
-  ].join('\n\n');
+    promptText,
+    characterDescriptions ? `${characterDescriptions}` : '',
+    `${promptDirection}`
+  ].filter(Boolean).join('\n\n');
   if (typeof lifeId !== 'string' || !/^[0-9a-f-]{36}$/i.test(lifeId)) return json({ error: 'A valid life id is required.' }, 400);
   if (!Number.isInteger(turnNumber) || turnNumber < 0) return json({ error: 'A valid turn number is required.' }, 400);
 
@@ -267,7 +335,7 @@ async function generateSceneImage(request, user) {
   const savedTurn = Number(life.data?.turnCount || 0);
   if (turnNumber !== savedTurn && turnNumber !== savedTurn + 1) return json({ error: 'That image does not match the current turn.' }, 409);
 
-  const promptHash = createHash('sha256').update(imagePrompt).digest('hex');
+  const promptHash = createHash('sha256').update(`${selectedModelKey}:${imagePrompt}`).digest('hex');
   const { data: generation, error: reserveError } = await client.from('jinsei_image_generations')
     .insert({ user_id: user.id, life_id: lifeId, turn_number: turnNumber, prompt_hash: promptHash })
     .select('id').single();
@@ -284,25 +352,55 @@ async function generateSceneImage(request, user) {
     console.info('[jinsei:image-prompt]', {
       lifeId,
       turnNumber,
+      model: selectedModelKey,
       prompt: imagePrompt
     });
     const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN });
-    const output = await replicate.run(REPLICATE_IMAGE_MODEL, {
-      input: {
-        prompt: imagePrompt,
-        seed: -1,
-        steps: 8,
-        width: 512,
-        height: 288
-      },
+    const isFlux = selectedModelKey === 'flux';
+    const replicateInput = isFlux
+      ? {
+          prompt: imagePrompt,
+          width: 768,
+          height: 768,
+          steps: 20,
+          cfg_scale: 5,
+          seed: -1
+        }
+      : {
+          vae: 'WAI-NSFW-illustrious-SDXL-v8',
+          prompt: imagePrompt,
+          negative_prompt: "text",
+          seed: -1,
+          model: 'WAI-NSFW-illustrious-SDXL-v8',    
+          steps: 30,
+          width: 768,
+          height: 768,
+          cfg_scale: 5,
+          clip_skip: 2,
+          pag_scale: 3,
+          scheduler: 'Euler a',
+          batch_size: 1,
+          guidance_rescale: 0.5,
+          prepend_preprompt: true
+        };
+    const output = await replicate.run(selectedModelId, {
+      input: replicateInput,
       wait: { mode: 'block', timeout: 60 },
       signal: request.signal
     });
     const outputFile = Array.isArray(output) ? output[0] : output;
-    if (!outputFile || typeof outputFile.blob !== 'function') throw new Error('Replicate did not return a generated picture.');
-    const imageBlob = await outputFile.blob();
+    let imageBlob;
+    if (outputFile && typeof outputFile.blob === 'function') {
+      imageBlob = await outputFile.blob();
+    } else if (typeof outputFile === 'string' && outputFile.startsWith('http')) {
+      const resp = await fetch(outputFile);
+      if (!resp.ok) throw new Error('Failed to download picture from Replicate URL.');
+      imageBlob = await resp.blob();
+    } else {
+      throw new Error('Replicate did not return a generated picture.');
+    }
     const image = Buffer.from(await imageBlob.arrayBuffer());
-    if (!image.length || image.length > 10 * 1024 * 1024) throw new Error('Generated picture has an invalid size.');
+    if (!image.length || image.length > 10 * 1600 * 900) throw new Error('Generated picture has an invalid size.');
     const imageType = imageBlob.type || 'image/png';
     const extension = imageType.includes('webp') ? 'webp' : imageType.includes('jpeg') ? 'jpg' : 'png';
     const storagePath = `${user.id}/${lifeId}/${turnNumber}-${generation.id}.${extension}`;
@@ -690,7 +788,7 @@ export async function POST(request, context) {
         body: JSON.stringify({
           model: MODEL,
           messages: [{ role: 'system', content: system }, ...messages],
-          max_tokens: 1000,
+          max_tokens: 2000,
           stream: true,
           provider: { sort: 'latency' }
         }),
