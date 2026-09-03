@@ -296,6 +296,8 @@ header{
   background:linear-gradient(100deg,var(--paper-deep) 40%,#EFE8D6 50%,var(--paper-deep) 60%);
   background-size:200% 100%;animation:shimmer 1.6s ease-in-out infinite;
 }
+.scene-debug{margin:14px 0 0;padding:10px 12px;border:1px dashed var(--line);background:rgba(0,0,0,.035);color:var(--ink-soft);font:11px/1.55 var(--mono);white-space:pre-wrap;overflow-wrap:anywhere}
+.scene-debug::before{content:'DEBUG · SCENE';display:block;margin-bottom:6px;color:var(--shu);font-weight:700;letter-spacing:.12em}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 @media (prefers-reduced-motion: reduce){ .scene-img.loading{animation:none} }
 .narr{font-family:var(--disp);font-size:16.5px;line-height:1.85;color:var(--ink)}
@@ -588,6 +590,66 @@ aside{padding:20px;background:#0F120F;border-left:1px solid var(--line)}.card{ba
   #game.on{grid-template-columns:1fr}#stream{padding:22px 16px 8px}#dock{padding:12px 12px 14px}.dock-hint{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.inrow{gap:6px}#send{min-width:74px;padding:0 12px}
 }
 </style>
+<style>
+/* ============ FOREIGN CITY / FIELD NOTEBOOK ============ */
+:root{
+  --paper:#F2EFE8;--paper-deep:#E9E5DC;--ink:#171716;--ink-soft:#686661;
+  --ai:#D13B2F;--ai-soft:#F2DED9;--shu:#D13B2F;--line:#B8B5AE;--ok:#516457;
+  --disp:'Shippori Mincho','Hiragino Mincho ProN','Yu Mincho',serif;
+  --body:'Zen Kaku Gothic New','Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  --mono:'IBM Plex Mono','SFMono-Regular',monospace;
+}
+html[data-theme="china"],html[data-theme="korea"],html[data-theme="hanja"]{
+  --paper:#F2EFE8;--paper-deep:#E9E5DC;--ink:#171716;--ink-soft:#686661;
+  --ai:#D13B2F;--ai-soft:#F2DED9;--shu:#D13B2F;--line:#B8B5AE;--ok:#516457;
+}
+body{background-color:var(--paper);background-image:radial-gradient(rgba(23,23,22,.035) .55px,transparent .7px);background-size:5px 5px;color:var(--ink)}
+button{letter-spacing:.01em}
+
+#setup{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(420px,.95fr);grid-template-rows:auto auto 1fr auto;align-items:start;min-height:100dvh;padding:0;background:var(--paper);overflow:auto}
+#setup::before{content:"FIELD RECORD / 01";position:absolute;top:30px;left:clamp(24px,5vw,72px);font:500 9px/1 var(--mono);letter-spacing:.18em;color:var(--ink-soft)}
+#setup::after{content:"35.6762° N  ·  139.6503° E";position:absolute;top:30px;right:clamp(24px,5vw,72px);font:400 9px/1 var(--mono);letter-spacing:.12em;color:var(--ink-soft)}
+#setup>.setup-sub:first-child{grid-column:1;grid-row:1;align-self:end;margin:clamp(130px,21vh,230px) 0 0 clamp(24px,5vw,72px);font:500 10px/1 var(--mono);letter-spacing:.2em;color:var(--shu);text-align:left;order:initial}
+.setup-title{grid-column:1;grid-row:2;margin:17px 0 0 clamp(24px,5vw,72px);font:800 clamp(92px,14vw,190px)/.82 var(--disp);letter-spacing:-.06em;color:var(--ink);text-align:left;order:initial}
+.setup-title::after{content:""}
+#setup>.setup-sub:nth-of-type(2){grid-column:1;grid-row:3;margin:24px 0 0 clamp(29px,5.35vw,77px);font:500 12px/1 var(--mono);letter-spacing:.44em;color:var(--ink);text-align:left;order:initial}
+.setup-lede{grid-column:1;grid-row:3;max-width:450px;margin:75px 54px 0 clamp(24px,5vw,72px);font:500 clamp(18px,1.7vw,25px)/1.65 var(--disp);color:var(--ink);text-align:left;order:initial}
+.setup-lede::before{content:"TOKYO / ARRIVAL";display:block;margin-bottom:18px;font:500 9px/1 var(--mono);letter-spacing:.18em;color:var(--ink-soft)}
+.setup-card{grid-column:2;grid-row:1/4;display:block;width:auto;margin:86px clamp(24px,5vw,72px) 56px 0;padding:31px 0 0;background:transparent;border:0;border-top:1px solid var(--ink);box-shadow:none;order:initial}
+#continue-block{margin:0 0 28px!important;padding:0 0 28px!important;border-bottom:1px solid var(--line)!important}
+.field-label{font:500 9px/1.4 var(--mono);letter-spacing:.17em;color:var(--ink-soft);margin:0 0 10px}
+#name-input{width:100%;margin:0 0 30px;padding:9px 0 11px;background:transparent;border:0;border-bottom:1px solid var(--ink);color:var(--ink);font:500 21px/1.3 var(--disp)}
+#name-input::placeholder{color:#96938D}
+#name-input:focus{outline:0;border-bottom-color:var(--shu)}
+.levels{display:grid;gap:0;background:transparent;border:1px solid var(--line);margin:0 0 26px}
+#destinations{grid-template-columns:repeat(4,1fr)}
+.level-btn{min-height:72px;padding:12px 11px;background:transparent;color:var(--ink);border:0;border-right:1px solid var(--line);text-align:left;box-shadow:none!important;transform:none!important}
+.level-btn:last-child{border-right:0}.level-btn::after{display:none}.level-btn:hover{background:rgba(23,23,22,.04)}
+.level-btn .jp{font:600 18px/1.2 var(--disp)}.level-btn .en{margin-top:5px;font:400 8px/1.35 var(--mono);letter-spacing:.02em;color:var(--ink-soft)}
+.level-btn.sel{background:var(--ink);color:var(--paper)}.level-btn.sel .en{color:#BDBAB2}.level-btn.sel .jp::after{content:"  ●";font:8px/1 var(--mono);color:var(--shu)}
+#begin-btn{width:100%;min-height:54px;margin:2px 0 0;background:var(--ink);color:var(--paper);font:600 15px/1 var(--disp);letter-spacing:.1em;text-transform:none}
+#begin-btn:hover{background:var(--shu);color:#fff}.setup-note{font:400 9px/1.55 var(--mono);color:var(--ink-soft)}
+.main-footer{grid-column:1/-1;grid-row:4;padding:19px clamp(24px,5vw,72px);border-top:1px solid var(--line);order:initial}.legal-links{justify-content:flex-start}.legal-links a{color:var(--ink-soft)}
+
+#statusbar{height:32px;padding:0 18px;background:var(--ink);color:var(--paper);border:0;font-size:10px}.sb-brand{font:600 13px/1 var(--disp);letter-spacing:.08em}.sb-item{border-color:rgba(242,239,232,.16)}.sb-label,.sb-save{color:rgba(242,239,232,.48)}.sb-val,.sb-val.yen{color:var(--paper)}.sb-plan{background:transparent;border-color:rgba(242,239,232,.35);color:var(--paper)}.sb-home,.sb-logout{border:0;color:rgba(242,239,232,.7)}
+#game{height:calc(100dvh - 32px);margin-top:32px}#game.on{grid-template-columns:minmax(0,1fr) 292px}
+main{border-color:var(--line);background:var(--paper)}
+header{min-height:56px;padding:0 27px;border-color:var(--line);background:rgba(242,239,232,.95);align-items:center}.brand{font:700 19px/1 var(--disp);letter-spacing:.05em}.brand::after{content:" / WORLD";font:500 8px/1 var(--mono);letter-spacing:.16em;color:var(--ink-soft)}#hud{margin-left:auto;font-size:9px;letter-spacing:.09em}
+#stream{padding:42px 28px 16px}.entry{max-width:690px;margin-bottom:38px}.entry::before{content:"FIELD NOTE";display:block;margin-bottom:10px;font:500 8px/1 var(--mono);letter-spacing:.18em;color:var(--ink-soft)}
+.narr{font:500 clamp(17px,1.55vw,21px)/1.9 var(--disp)}.narr em{color:var(--shu);font-style:normal}.scene-img{aspect-ratio:16/8.5;border:0;border-bottom:1px solid var(--ink);filter:none}.scene-img img{filter:saturate(.62) contrast(.96) sepia(.08)}
+.npc{margin-top:20px;padding:15px 0 2px 22px;border-left:2px solid var(--shu);background:transparent}.npc .who{font-size:8px;color:var(--shu)}.npc .jp{font:600 21px/1.8 var(--disp)}.npc .en{border-color:var(--line)}
+.reveal-btn{border:0;border-bottom:1px solid var(--line);padding:3px 0}.you .bubble{background:var(--ink);color:var(--paper);padding:10px 15px}.you .bubble.action{background:transparent;color:var(--ink-soft);border:1px solid var(--line)}
+.feedback{background:transparent;border:0;border-left:1px solid var(--line);padding:5px 0 5px 13px}.feedback.miss{border-color:var(--shu)}.feedback .better{font-family:var(--disp)}
+#dock{padding:13px 27px 17px;border-color:var(--line);background:rgba(242,239,232,.97)}#dock::before{content:"WHAT DO YOU SAY?";display:block;max-width:690px;margin:0 auto 9px;font:500 8px/1 var(--mono);letter-spacing:.18em;color:var(--ink-soft)}
+.chip{background:transparent;border:0;border-bottom:1px dotted var(--line);padding:3px 1px}.chip:hover{background:transparent;color:var(--shu);border-color:var(--shu)}
+#say{height:52px;background:#F8F5EF;border:0;border-bottom:1px solid var(--ink);color:var(--ink);font:500 17px/1 var(--body);padding-left:12px}#say:focus{outline:0;border-bottom-color:var(--shu)}#send{min-width:105px;background:var(--ink);color:var(--paper);font:600 14px/1 var(--disp)}#send:hover{background:var(--shu);color:#fff}.dock-hint{font-size:8px;letter-spacing:.06em}
+aside{padding:18px;background:var(--paper-deep);border-left:0}.card{background:rgba(248,245,239,.62);border:1px solid var(--ink);box-shadow:none}.card-head{padding:8px 11px;background:transparent;color:var(--ink);border-color:var(--ink)}.card-head .t{font:700 13px/1 var(--disp)}.card-head .g{color:var(--ink-soft)}.crow{border-color:var(--line)}.meter{border-color:var(--ink);background:transparent}.panel h3,.crow .k{color:var(--ink-soft)}
+.vocab-panel:hover,.vocab-panel:focus-visible,.vocab-card{background:rgba(248,245,239,.72);border-color:var(--line)}.hanko{border-radius:3px;font-size:8px}.milestone-banner{transform:rotate(-1deg)}
+.setup-card#auth-card,.setup-card#plans-card{display:block;width:min(760px,100%);margin:0;background:var(--paper);border:1px solid var(--ink);padding:32px;box-shadow:7px 7px 0 rgba(23,23,22,.18)}.auth-backdrop,.plans-backdrop,.legal-backdrop,.dictionary-backdrop{background:rgba(32,36,42,.72)}.auth-tab,.plan-card,#legal-card,#dictionary-card{background:var(--paper);color:var(--ink);border-color:var(--line)}.auth-tab.sel{background:var(--ink);color:var(--paper)}
+
+@media(max-width:860px){#setup{display:block;padding-top:1px}#setup>.setup-sub:first-child{margin-top:110px}.setup-title{margin-top:18px}.setup-lede{margin-bottom:48px}.setup-card{margin:0 24px 52px;padding-top:28px}.main-footer{padding-left:24px}#game.on{grid-template-columns:1fr}#stream{padding-top:30px}}
+@media(max-width:620px){#setup::before{left:18px}#setup>.setup-sub:first-child{margin-left:18px}.setup-title{margin-left:18px;font-size:clamp(84px,31vw,132px)}#setup>.setup-sub:nth-of-type(2),.setup-lede{margin-left:18px;margin-right:18px}.setup-card{margin-left:18px;margin-right:18px}#destinations{grid-template-columns:repeat(2,1fr)}.level-btn{border-bottom:1px solid var(--line)}#statusbar{height:36px}#game{height:calc(100dvh - 36px);margin-top:36px}header{padding:0 14px}#stream{padding:24px 16px 8px}#dock{padding:11px 14px 14px}#send{min-width:72px}}
+</style>
 </head>
 <body>
 
@@ -838,11 +900,11 @@ const S = {
           hunger:85, health:100, alive:true,
           job:null, visa:'Temporary Visitor (90 days)', relationships:[], appearances:{}, flags:[] },
   vocab:[], history:[], stamps:[], busy:false, hintSpend:0,
-  turnCount:0, signupPrompted:false, summary:'', awaitingAction:false
+  turnCount:0, signupPrompted:false, summary:''
 };
 const HINT_COST = 500;
 const DESTINATIONS = {
-  japan:{country:'Japan',language:'Japanese',script:'日本語',romanization:'rōmaji',cash:180000,currency:'¥',currencyName:'yen',visa:'Temporary Visitor (90 days)',lede:'Begin somewhere unexpected in Japan with ¥180,000 and whatever Japanese you carry in your head.'},
+  japan:{country:'Japan',language:'Japanese',script:'日本語',romanization:'rōmaji',cash:180000,currency:'¥',currencyName:'yen',visa:'Temporary Visitor (90 days)',lede:'Begin at Tokyo Narita Airport with ¥180,000 and whatever Japanese you carry in your head.'},
   china:{country:'China',language:'Mandarin Chinese',script:'中文',romanization:'pinyin',cash:8000,currency:'¥',currencyName:'yuan',visa:'Temporary Visitor',lede:'Begin somewhere unexpected in China with ¥8,000 and whatever Mandarin you carry in your head.'},
   korea:{country:'Korea',language:'Korean',script:'한국어',romanization:'romanization',cash:800000,currency:'₩',currencyName:'won',visa:'Temporary Visitor (90 days)',lede:'Begin somewhere unexpected in Korea with ₩800,000 and whatever Korean you carry in your head.'},
   hanja:{country:'Korea',language:'Korean',script:'한글·漢字 혼용',romanization:'Hangul reading',cash:800000,currency:'₩',currencyName:'won',visa:'Temporary Visitor (90 days)',lede:'한국어 속 漢字語를 배우며, 소설 같은 뜻밖의 장소에서 삶을 시작합니다.'}
@@ -920,6 +982,21 @@ HANJA MODE — critical:
 - FEEDBACK coaches the player's Korean gently; when useful, show the relevant Hanja spelling and Hangul reading.
 `:'';
 
+const sceneEnabled=()=>CURRENT_PLAN.pictures || (CURRENT_USER||'').toLowerCase()==='miara';
+const imageContinuityRules=()=>sceneEnabled()?`
+IMAGE CHARACTER CONTINUITY:
+- Include at least one attractive adult who is naturally present in the current scene. Make that person a prominent principal subject—not a tiny, distant, obscured, or incidental background figure—and frame their face and body clearly enough to establish their identity.
+- STATE.appearances is the permanent character-profile registry. Create an entry immediately for EVERY named person introduced in the story, including ${S.name}; do this whether or not that person appears in the current image. Never delete an existing entry.
+- Every profile must be an object with detailed face, height, hair, personality, and clothing fields. Face must describe apparent age, face shape, skin tone, eyes, brows, nose, mouth, and distinguishing features. Height must give an approximate measurement and build/posture. Hair must give color, length, texture, and style. Personality must record stable traits and mannerisms.
+- Clothing must be an array enumerating every article worn in the person's current outfit, with at least 5 entries. Each entry must name the article, exact color, material/cut/pattern, and distinctive details. Include layers, bottoms, footwear, and visible accessories; never collapse an outfit into phrases such as "casual clothes." Update clothing only when the story actually establishes that the person changed clothes, while preserving face, height, hair, and personality.
+- On every later appearance, reuse the stored physical traits and current clothing closely. Never silently change or omit identity details. When a profile from an older save is incomplete or a legacy string, expand it into the full structured format on the next turn.
+- Never use a real public figure or celebrity as a visual reference.
+`:'';
+const sceneOutputFormat=()=>sceneEnabled()?`@@SCENE@@
+(visual character descriptions only. For each visible character, give their name followed by face, hair, build, and current clothing, reusing STATE.appearances and memory exactly. Be concise. Do not mention location, background, objects, action, pose, lighting, weather, composition, or mood.)
+`:'';
+const appearancesStateFormat=()=>sceneEnabled()?',"appearances":{"character name":{"face":"apparent age, shape, skin, eyes, brows, nose, mouth, distinguishing features","height":"approximate measurement, build, posture","hair":"color, length, texture, style","personality":"stable traits and mannerisms","clothing":[{"article":"specific garment/accessory","color":"precise color","details":"material, cut, pattern, condition, distinctive features"}]}}':'';
+
 const SYSTEM = () => `You are the game engine of 人生 (JINSEI), a slice-of-life text adventure set in present-day ${destination().country} that doubles as a ${destination().language} teacher. The player, ${S.name}, has just moved to ${destination().country} alone and must build an entire life — job hunting, apartment, friendships, romance, maybe marriage, visa renewals, festivals, illness, everything — over months of in-game time. The player's ${destination().language} level: ${languageDescription()}
 
 ${S.summary ? `STORY SO FAR (a running summary of everything that happened before the recent messages below — the recent message history is truncated to save space, so THIS is your memory of earlier events; treat it as canon and keep continuity with it):\n${S.summary}\n` : ''}
@@ -927,9 +1004,8 @@ CORE RULE — THE LANGUAGE GATE: The player must communicate in ${destination().
 ${S.country==='japan' ? `JAPANESE SCRIPT RULE — mandatory: Every JP field must be written in natural Japanese script and contain hiragana, katakana, or kanji. JP must NEVER be Latin-letter rōmaji. ROMAJI is the only field that may contain the Latin-letter reading. Before finishing, verify JP and ROMAJI are not duplicates in Latin script.` : ''}
 ${hanjaTeachingRules()}
 
-ACTIONS: Text wrapped in asterisks is a physical action, not speech — e.g. *wait*, *point at the menu*, *bow*, *hand over money*. Actions may be written in English; they bypass the language gate because they are non-verbal. Gesturing can get simple things done, but anything requiring words — jobs, friendships, paperwork, romance — still demands spoken ${destination().language}. When a turn is action-only, FEEDBACK should be UNDERSTOOD: none, not a language judgment. When the incoming message is labelled PLAYER ACTION, it is definitely an action even if it has no asterisks; take whatever the player typed as the action and do not apply the language gate to it.
+ACTIONS: Text wrapped in asterisks is a physical action, not speech — e.g. *wait*, *point at the menu*, *bow*, *hand over money*. Actions may be written in English; they bypass the language gate because they are non-verbal. Gesturing can get simple things done, but anything requiring words — jobs, friendships, paperwork, romance — still demands spoken ${destination().language}. When a turn is action-only, FEEDBACK should be UNDERSTOOD: none, not a language judgment.
 - Never choose or perform an intentional action for the player. You control the world and NPCs, but the player controls their own body and decisions.
-- If the latest PLAYER ACTION is "yes", "no", or an equivalent short confirmation/refusal, interpret it as the answer to the specific action you proposed in your immediately preceding narration.
 
 STORY RULES:
 - ${S.hardcore ? `Recognizably ${destination().country} — its transit, food, bureaucracy, neighborhoods, and seasons — but tonally unstable: specific and concrete in its details, uncanny and often darkly funny in how those details behave.` : `Grounded, warm, specific. Real neighborhoods, transit, food, city paperwork, seasons, and social customs in ${destination().country}. Small moments matter.`}
@@ -938,16 +1014,10 @@ STORY RULES:
 - Award a "milestone" ONLY for major life events: FIRST FRIEND, GOT A JOB, APARTMENT, FIRST DATE, PROMOTION, ENGAGED, MARRIED, VISA RENEWED, DIED, etc. (short, in caps, max 3 words). Otherwise write NONE.
 - Teach: NPC lines should be natural for the player's level, and each turn introduce 0-2 genuinely useful words.
 - Judge the player's ${destination().language} in FEEDBACK: UNDERSTOOD yes/partial/no. Give ONE short coaching NOTE and, if helpful, a corrected/improved sentence in BETTER (${destination().language} + ${destination().romanization} in parentheses). Be encouraging, never pedantic. If there is no player utterance to judge, write UNDERSTOOD: none, NOTE: none, BETTER: none.
-- Keep everything SHORT. Narration 2-3 sentences. One NPC line per turn, 1-2 sentences.
-- When nobody is speaking to the player, OMIT @@NPC@@. If a specific, natural next action is available or required, do not perform it: end @@NARRATION@@ by asking, "Would you like to [specific action]? Type yes, no, or what you want to do." If there is no clear action to propose, end with: "What do you want to do? Type what you want to do." These are action prompts, not dialogue.
+- Keep everything SHORT. Narration 2-3 sentences. One NPC line per turn, 1-2 sentences.${sceneEnabled()?' The NARRATION text is also used directly as the image-generation prompt, so make it visually concrete: establish the place, lighting, visible people, objects, action, and mood without writing a separate image prompt.':''}
+- Every turn must include a conversation with an NPC. Always include @@NPC@@ with a natural line addressed to the player, and let that line create the opening for the player's next reply. Never end narration or dialogue with a meta-instruction, an action menu, or a yes/no action prompt.
 
-IMAGE CHARACTER CONTINUITY:
-- Include at least one attractive adult who is naturally present in the current scene. Make that person a prominent principal subject—not a tiny, distant, obscured, or incidental background figure—and frame their face and body clearly enough to establish their identity.
-- STATE.appearances is the permanent character-profile registry. Create an entry immediately for EVERY named person introduced in the story, including ${S.name}; do this whether or not that person appears in the current image. Never delete an existing entry.
-- Every profile must be an object with detailed face, height, hair, personality, and clothing fields. Face must describe apparent age, face shape, skin tone, eyes, brows, nose, mouth, and distinguishing features. Height must give an approximate measurement and build/posture. Hair must give color, length, texture, and style. Personality must record stable traits and mannerisms.
-- Clothing must be an array enumerating every article worn in the person's current outfit, with at least 5 entries. Each entry must name the article, exact color, material/cut/pattern, and distinctive details. Include layers, bottoms, footwear, and visible accessories; never collapse an outfit into phrases such as "casual clothes." Update clothing only when the story actually establishes that the person changed clothes, while preserving face, height, hair, and personality.
-- On every later appearance, reuse the stored physical traits and current clothing closely. Never silently change or omit identity details. When a profile from an older save is incomplete or a legacy string, expand it into the full structured format on the next turn.
-- Never use a real public figure or celebrity as a visual reference.
+${imageContinuityRules()}
 
 SURVIVAL — HUNGER, HEALTH, DEATH: This life has real stakes. Track "hunger" and "health" (0-100 each) in STATE every turn.
 - Hunger drains steadily with time (roughly ${S.hardcore ? '15-30' : '10-20'} per skipped meal or half-day of neglect). Eating a real meal restores it substantially (40-70); a small snack helps a little (15-25).
@@ -959,7 +1029,7 @@ ${S.hardcore ? `WORLD TONE — HARDCORE (鬼畜モード): This is not a friendl
 
 COUNTRY PRIORITY: The selected destination is ${destination().country}. Every place, institution, social custom, currency, language correction, immigration rule, and daily detail MUST belong to ${destination().country}. Do not mention Japan, Japanese, yen, or Japanese-specific institutions unless the selected destination is Japan.
 
-OUTPUT FORMAT — critical: your output is displayed to the player character-by-character as you generate it (streaming), so narration and NPC speech must appear FIRST, in the order the player should see them, before any structured data. Respond in PLAIN TEXT ONLY — no markdown, no code fences, no JSON wrapper around the whole thing — using EXACTLY these markers, each alone on its own line, in this exact order. Omit the whole @@NPC@@ section if no NPC speaks this turn. Every other section must always appear; write NONE where nothing applies.
+OUTPUT FORMAT — critical: your output is displayed to the player character-by-character as you generate it (streaming), so narration and NPC speech must appear FIRST, in the order the player should see them, before any structured data. Respond in PLAIN TEXT ONLY — no markdown, no code fences, no JSON wrapper around the whole thing — using EXACTLY these markers, each alone on its own line, in this exact order. @@NPC@@ is mandatory on every turn.${sceneEnabled()?' @@SCENE@@ is mandatory and must contain only the minimal character description requested below.':' Do not output @@SCENE@@.'} Every other section must always appear; write NONE where nothing applies.
 
 @@NARRATION@@
 (2-3 sentences, second person, English, present tense)
@@ -968,7 +1038,7 @@ NAME: (npc name or role)
 JP: (${destination().language} line)
 ROMAJI: (${destination().romanization} reading)
 EN: (English translation)
-@@FEEDBACK@@
+${sceneOutputFormat()}@@FEEDBACK@@
 UNDERSTOOD: yes|partial|no|none
 NOTE: (one short coaching sentence, or none)
 BETTER: (improved ${destination().language} with ${destination().romanization} in parentheses, or none)
@@ -976,10 +1046,8 @@ BETTER: (improved ${destination().language} with ${destination().romanization} i
 (0-2 lines, each exactly "jp | romaji | english meaning", or a single line NONE)
 @@SUGGESTIONS@@
 (2-3 short ${destination().romanization} phrases the player might try next, one per line)
-@@SCENE@@
-(one vivid 70-100 word prompt for the CURRENT scene. State the composition, place, time, light, weather, objects, textures, and mood. Include an attractive adult as a prominent principal subject, clearly visible in the foreground or middle ground, and describe what they are doing. For every named person shown, repeat their stored face, height, hair, and ALL current clothing articles, colors, and details from STATE.appearances. Establish a complete profile here and in STATE if new. Keep ethnicity and local details appropriate to ${destination().country}. Do not include dialogue, captions, signs with invented text, celebrities, or contradictory appearance details.)
 @@STATE@@
-(one single-line JSON object, no line breaks inside it: {"day":int,"time":"morning|afternoon|evening|night","location":"short place name","yen":int,"hunger":0-100,"health":0-100,"alive":true|false,"job":"job title or null","visa":"visa status","relationships":[{"name":"...","role":"...","level":1-5}],"appearances":{"character name":{"face":"apparent age, shape, skin, eyes, brows, nose, mouth, distinguishing features","height":"approximate measurement, build, posture","hair":"color, length, texture, style","personality":"stable traits and mannerisms","clothing":[{"article":"specific garment/accessory","color":"precise color","details":"material, cut, pattern, condition, distinctive features"}]}},"flags":["short plot memory strings, max 10"]}. Every person profile needs at least 5 clothing entries. Copy forward every existing person and every established detail.)
+(one single-line JSON object, no line breaks inside it: {"day":int,"time":"morning|afternoon|evening|night","location":"short place name","yen":int,"hunger":0-100,"health":0-100,"alive":true|false,"job":"job title or null","visa":"visa status","relationships":[{"name":"...","role":"...","level":1-5}]${appearancesStateFormat()},"flags":["short plot memory strings, max 10"]}.${sceneEnabled()?' Every person profile needs at least 5 clothing entries. Copy forward every existing person and every established detail.':''})
 @@MILESTONE@@
 (CAPS LABEL or NONE)
 @@SUMMARY@@
@@ -1010,9 +1078,7 @@ function updateDestinationUI(){
 }
 function updateInputPrompt(){
   const d=destination();
-  $('say').placeholder=S.awaitingAction
-    ? 'Type yes, no, or what you want to do.'
-    : `Speak in ${d.language}… (${d.romanization} OK)`;
+  $('say').placeholder=`Speak in ${d.language}… (${d.romanization} OK)`;
 }
 function applyLocale(){
   const l=locale();
@@ -1359,7 +1425,7 @@ async function saveGame(){
   const payload = {
     name:S.name, country:S.country, level:S.level, hardcore:S.hardcore, state:S.state, vocab:S.vocab,
     history:S.history, stamps:S.stamps, streamHTML: stream.innerHTML,
-    turnCount:S.turnCount||0, signupPrompted:!!S.signupPrompted, summary:S.summary||'', awaitingAction:!!S.awaitingAction,
+    turnCount:S.turnCount||0, signupPrompted:!!S.signupPrompted, summary:S.summary||'',
     savedAt: Date.now()
   };
   if(CURRENT_USER){
@@ -1431,7 +1497,7 @@ function resumeGame(save,lifeId){
   S.name=save.name; S.country=save.country||'japan'; S.level=save.level; S.hardcore=!!save.hardcore; S.state=normalizeCurrencyState(save.state); S.vocab=save.vocab||[];
   applyLocale();
   S.history=save.history||[]; S.stamps=save.stamps||[];
-  S.turnCount=save.turnCount||0; S.signupPrompted=!!save.signupPrompted; S.summary=save.summary||''; S.awaitingAction=!!save.awaitingAction;
+  S.turnCount=save.turnCount||0; S.signupPrompted=!!save.signupPrompted; S.summary=save.summary||'';
   $('setup').classList.add('hide');
   $('game').classList.add('on');
   $('statusbar').classList.remove('hide');
@@ -1452,7 +1518,6 @@ initIdentity();
 async function start(){
   S.name = $('name-input').value.trim() || 'Traveler';
   S.lifeId=null;
-  S.awaitingAction=false;
   updateInputPrompt();
   $('begin-btn').disabled = true; $('begin-btn').textContent=S.country==='hanja'?'故事를 여는 중…':'Opening story…';
   $('setup').classList.add('hide');
@@ -1460,10 +1525,14 @@ async function start(){
   $('statusbar').classList.remove('hide');
   enterGameRoute();
   const d=destination();
-  S.state={ day:1, time:'afternoon', location:'', yen:d.cash, hunger:85, health:100, alive:true, job:null, visa:d.visa, relationships:[], appearances:{}, flags:[] };
+  const openingLocation=S.country==='japan'?'Narita International Airport, Terminal 1 Arrivals':'';
+  S.state={ day:1, time:'afternoon', location:openingLocation, yen:d.cash, hunger:85, health:100, alive:true, job:null, visa:d.visa, relationships:[], appearances:{}, flags:[] };
   renderCard();
   await saveGame();
-  await turn(null, `[GAME START] Generate a brand-new opening for this life. Invent a fresh, specific location somewhere in ${d.country}, choose a fitting time of day, and create an original immediate story hook. Do not select from a predefined list or default to an airport, arrival scene, or the country's most obvious tourist landmark. Begin in medias res like the first page of a grounded contemporary novel: make the generated location tactile and locally credible, explain only as much as feels natural, and let the first NPC encounter emerge from the hook. Set STATE.location and STATE.time to the location and time you generate, and record a concise version of the opening hook in STATE.flags. It is Day 1; set funds to ${d.cash}, hunger to 85, health to 100, and visa to "${d.visa}". The player must use ${d.language} to navigate the scene. Give suggestions suited to their level.`);
+  const openingDirective=S.country==='japan'
+    ? `[GAME START] Generate a brand-new opening for this life at Narita International Airport, Terminal 1 Arrivals, in the Tokyo area. The player has just arrived in Japan. Keep STATE.location at "Narita International Airport, Terminal 1 Arrivals" and STATE.time as "afternoon" for this opening turn. Create an original, immediate story hook grounded in the arrivals hall; make it tactile and locally credible, explain only as much as feels natural, and let the first NPC encounter emerge from the hook. Record a concise version of the opening hook in STATE.flags. It is Day 1; set funds to ${d.cash}, hunger to 85, health to 100, and visa to "${d.visa}". The player must use Japanese to navigate the scene. Give suggestions suited to their level.`
+    : `[GAME START] Generate a brand-new opening for this life. Invent a fresh, specific location somewhere in ${d.country}, choose a fitting time of day, and create an original immediate story hook. Begin in medias res like the first page of a grounded contemporary novel: make the generated location tactile and locally credible, explain only as much as feels natural, and let the first NPC encounter emerge from the hook. Set STATE.location and STATE.time to the location and time you generate, and record a concise version of the opening hook in STATE.flags. It is Day 1; set funds to ${d.cash}, hunger to 85, health to 100, and visa to "${d.visa}". The player must use ${d.language} to navigate the scene. Give suggestions suited to their level.`;
+  await turn(null, openingDirective);
 }
 
 /* ================= SIGN-UP NUDGE (guest players, after their 10th turn) ================= */
@@ -1501,11 +1570,7 @@ async function turn(playerText, directive){
 
   const spendNote = S.hintSpend ? `\nNOTE: the player paid ¥${S.hintSpend} for phrase hints (already deducted in CURRENT STATE — carry the yen figure forward, do not re-deduct).` : '';
   S.hintSpend = 0;
-  const userMsg = directive ? directive : S.awaitingAction ?
-`CURRENT STATE: ${JSON.stringify(S.state)}${spendNote}
-PLAYER ACTION: "${playerText}"
-Take this exactly as a physical action, not dialogue. Respond per the rules and continue ongoing arcs from flags/relationships.` :
-`CURRENT STATE: ${JSON.stringify(S.state)}${spendNote}
+  const userMsg = directive ? directive : `CURRENT STATE: ${JSON.stringify(S.state)}${spendNote}
 PLAYER SAYS: "${playerText}"
 Respond per the rules. Remember the language gate and continue ongoing arcs from flags/relationships.`;
 
@@ -1513,16 +1578,17 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
   const imageTurnNumber = playerText===null ? 0 : (S.turnCount||0)+1;
 
   /* live DOM scaffolding — built incrementally as revealed text grows */
-  let entry=null, narrDiv=null, sceneWrap=null;
+  let entry=null, narrDiv=null, sceneWrap=null, sceneDebug=null;
   let npcDiv=null, npcWho=null, npcJp=null, npcRomaji=null, npcEn=null;
   let buf='', sections={}, gotAnyText=false, thinkGone=false;
+  let lastSceneDebugText='';
 
   function removeThink(){ if(!thinkGone){ think.remove(); thinkGone=true; } }
   function ensureEntry(){
     if(entry) return;
     removeThink();
     entry=document.createElement('div'); entry.className='entry';
-    if(CURRENT_PLAN.pictures && S.lifeId){
+    if(sceneEnabled() && S.lifeId){
       sceneWrap=document.createElement('div'); sceneWrap.className='scene-img loading';
       entry.appendChild(sceneWrap);
     }
@@ -1543,22 +1609,42 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
     npcDiv.appendChild(npcWho); npcDiv.appendChild(npcJp); npcDiv.appendChild(npcRomaji); npcDiv.appendChild(npcEn); npcDiv.appendChild(rb);
     entry.appendChild(npcDiv);
   }
+  function updateSceneDebug(sourceSections){
+    if(sourceSections.SCENE===undefined || !sceneEnabled()) return;
+    if(sourceSections.SCENE===lastSceneDebugText) return false;
+    lastSceneDebugText=sourceSections.SCENE;
+    ensureEntry();
+    if(!sceneDebug){
+      sceneDebug=document.createElement('pre');
+      sceneDebug.className='scene-debug';
+      entry.appendChild(sceneDebug);
+    }
+    sceneDebug.textContent=sourceSections.SCENE;
+    return true;
+  }
   function updateLive(){
+    let changed=false;
     if(sections.NARRATION!==undefined){
       ensureEntry();
-      narrDiv.textContent = sections.NARRATION;
+      if(narrDiv.textContent!==sections.NARRATION){ narrDiv.textContent=sections.NARRATION; changed=true; }
+      if(sections.NPC!==undefined) narrDiv.classList.remove('live');
     }
     if(sections.NPC!==undefined){
       ensureNpcBlock();
       const p = parseNpc(sections.NPC);
-      npcWho.textContent = p.name || '…';
+      const nextWho=p.name||'…';
+      if(npcWho.textContent!==nextWho){ npcWho.textContent=nextWho; changed=true; }
       const jpText=p.jp||'';
       npcJp.dataset.rawJp=jpText;
-      npcJp.textContent = S.country==='japan' && jpText && !hasJapaneseScript(jpText) ? '' : jpText;
-      npcRomaji.textContent = p.romaji || '';
-      npcEn.textContent = p.en || '';
+      const nextJp=S.country==='japan' && jpText && !hasJapaneseScript(jpText) ? '' : jpText;
+      if(npcJp.textContent!==nextJp){ npcJp.textContent=nextJp; changed=true; }
+      const nextRomaji=p.romaji||'', nextEn=p.en||'';
+      if(npcRomaji.textContent!==nextRomaji){ npcRomaji.textContent=nextRomaji; changed=true; }
+      if(npcEn.textContent!==nextEn){ npcEn.textContent=nextEn; changed=true; }
+      if(sections.SCENE!==undefined || sections.FEEDBACK!==undefined) npcJp.classList.remove('live');
     }
-    scrollDown();
+    if(updateSceneDebug(sections)) changed=true;
+    if(changed) scrollDown();
   }
 
   /* Network delivery is bursty (a handful of characters per chunk, arriving
@@ -1571,18 +1657,18 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
   let resolveFinished; const finished = new Promise(res=>{ resolveFinished=res; });
   let sceneImageStarted=false;
 
-  function maybeStartSceneImage(){
-    /* sections.STATE only exists once the @@STATE@@ marker itself has been
-       revealed, which proves the @@SCENE@@ section ahead of it is complete
-       — not still mid-sentence. That's the earliest safe moment to fire
-       the image request, well before FEEDBACK/VOCAB/MILESTONE have streamed.
-       The skeleton itself is already on screen from the moment the entry
-       was created — this just decides whether to fill it or drop it. */
+  function maybeStartSceneImage(sourceSections=sections){
+    /* @@FEEDBACK@@ proves that the short @@SCENE@@ block is complete. Start
+       from the raw buffer instead of waiting for the UI reveal to catch up. */
     if(sceneImageStarted || !sceneWrap) return;
-    if(sections.SCENE!==undefined && sections.STATE!==undefined){
+    if(sourceSections.NARRATION!==undefined && sourceSections.SCENE!==undefined && sourceSections.FEEDBACK!==undefined){
       sceneImageStarted=true;
-      if(sections.SCENE.toUpperCase()==='NONE') sceneWrap.remove();
-      else attachSceneImage(sceneWrap, sections.SCENE, imageTurnNumber);
+      attachSceneImage(
+        sceneWrap,
+        (sourceSections.NARRATION||'').trim(),
+        (sourceSections.SCENE||'').trim(),
+        imageTurnNumber
+      );
     }
   }
   function scheduleRender(){
@@ -1655,6 +1741,12 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
         if(typeof content==='string' && content){
           buf += content;
           gotAnyText=true;
+          if(sceneEnabled()){
+            ensureEntry();
+            const rawSections=parseSections(buf);
+            if(updateSceneDebug(rawSections)) scrollDown();
+            maybeStartSceneImage(rawSections);
+          }
           scheduleRender();
         }
       }
@@ -1704,7 +1796,7 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
 
   sections = parseSections(buf);
   updateLive();
-  if(narrDiv) narrDiv.classList.remove('live');
+  if(entry) entry.querySelectorAll('.live').forEach(el=>el.classList.remove('live'));
   if(npcJp){
     npcJp.classList.remove('live');
     const jpText=await ensureJapaneseScript(npcJp.dataset.rawJp||npcJp.textContent);
@@ -1714,10 +1806,8 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
 
   finalizeTurn(sections, playerText!==null);
   if(!sceneImageStarted){
-    if(sceneWrap && sections.SCENE && sections.SCENE.toUpperCase()!=='NONE'){
-      attachSceneImage(sceneWrap, sections.SCENE, imageTurnNumber);
-    } else if(sceneWrap){
-      sceneWrap.remove(); /* stream was cut short before a usable SCENE ever arrived */
+    if(sceneWrap){
+      attachSceneImage(sceneWrap, (sections.NARRATION||'').trim(), (sections.SCENE||'').trim(), imageTurnNumber);
     }
   }
 
@@ -1739,23 +1829,76 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
 }
 
 /* ================= PAID SCENE IMAGE ================= */
-async function attachSceneImage(wrap, prompt, turnNumber){
+function rememberedCharacterAppearance(){
+  const appearances=S.state&&S.state.appearances;
+  if(!appearances || typeof appearances!=='object') return '';
+  return Object.entries(appearances).map(([name,profile])=>{
+    if(!profile || typeof profile!=='object') return `${name}: ${String(profile||'')}`;
+    const clothing=Array.isArray(profile.clothing)
+      ? profile.clothing.map(item=>typeof item==='string'?item:[item.article,item.color,item.details].filter(Boolean).join(' ')).join(', ')
+      : String(profile.clothing||'');
+    return `${name}: ${[profile.face,profile.hair,profile.height,clothing].filter(Boolean).join('; ')}`;
+  }).filter(Boolean).join('\n').slice(0,1000);
+}
+async function promotePersistedImage(img,generationId,objectUrl){
+  const savedUrl=`/api/generated-image?id=${encodeURIComponent(generationId)}`;
+  for(let attempt=0;attempt<30;attempt++){
+    if(attempt) await new Promise(resolve=>setTimeout(resolve,500));
+    try{
+      const saved=await fetch(savedUrl,{credentials:'same-origin'});
+      if(!saved.ok) continue;
+      await saved.blob(); // populate the browser cache before replacing the live blob URL
+      await new Promise((resolve,reject)=>{
+        img.onload=resolve;
+        img.onerror=reject;
+        img.src=savedUrl;
+      });
+      URL.revokeObjectURL(objectUrl);
+      img.onload=null;
+      img.onerror=null;
+      saveGame();
+      return;
+    }catch(e){
+      img.onload=null;
+      img.onerror=null;
+      img.src=objectUrl;
+      /* persistence may still be finishing */
+    }
+  }
+}
+async function attachSceneImage(wrap, narration, characterAppearance, turnNumber){
   try{
+    const appearance=(characterAppearance||'').trim() || rememberedCharacterAppearance();
     const r = await fetch('/api/image', {
       method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin',
-      body: JSON.stringify({ prompt, country:S.country, lifeId:S.lifeId, turnNumber })
+      body: JSON.stringify({ narration, characterAppearance:appearance, country:S.country, lifeId:S.lifeId, turnNumber })
     });
     if(!r.ok) throw new Error('image request failed');
-    const d = await r.json();
-    if(!d.url) throw new Error('no url');
+    const responseType=r.headers.get('content-type')||'';
+    const generationId=r.headers.get('x-jinsei-image-id')||'';
+    let imageUrl='';
+    let objectUrl='';
+    if(responseType.includes('application/json')){
+      const d=await r.json();
+      if(!d.url) throw new Error('no url');
+      imageUrl=d.url;
+    }else{
+      const blob=await r.blob();
+      if(!blob.size) throw new Error('empty image');
+      objectUrl=URL.createObjectURL(blob);
+      imageUrl=objectUrl;
+    }
     const img=new Image();
     img.onload=()=>{
+      img.onload=null;
       wrap.classList.remove('loading');
       wrap.appendChild(img);
-      scrollDown(); saveGame();
+      scrollDown();
+      if(objectUrl && generationId) promotePersistedImage(img,generationId,objectUrl);
+      else saveGame();
     };
-    img.onerror=()=>{ wrap.remove(); };
-    img.src=d.url;
+    img.onerror=()=>{ if(objectUrl) URL.revokeObjectURL(objectUrl); wrap.remove(); };
+    img.src=imageUrl;
     img.alt='';
   }catch(e){
     wrap.remove(); // no image this turn — game continues unaffected
@@ -1804,8 +1947,6 @@ function parseFeedbackBlock(text){
 
 /* ================= FINALIZE (structured data, arrives after prose) ================= */
 function finalizeTurn(sections, hadPlayerTurn){
-  const hasNpc=Boolean(sections.NPC && parseNpc(sections.NPC).jp);
-  S.awaitingAction=!hasNpc;
   updateInputPrompt();
   if(hadPlayerTurn && sections.FEEDBACK){
     const fb=parseFeedbackBlock(sections.FEEDBACK);
@@ -1931,8 +2072,18 @@ function renderCard(){
 }
 
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+let streamAutoFollow=true;
+function stopStreamAutoFollow(){ streamAutoFollow=false; }
+stream.addEventListener('wheel',stopStreamAutoFollow,{passive:true});
+stream.addEventListener('touchstart',stopStreamAutoFollow,{passive:true});
+stream.addEventListener('pointerdown',stopStreamAutoFollow,{passive:true});
+document.addEventListener('keydown',event=>{
+  if(['ArrowUp','ArrowDown','PageUp','PageDown','Home','End',' '].includes(event.key)) stopStreamAutoFollow();
+});
 function scrollDown(force){
+  if(force) streamAutoFollow=true;
   requestAnimationFrame(()=>{
+    if(!streamAutoFollow) return;
     const nearBottom = stream.scrollHeight - stream.scrollTop - stream.clientHeight < 80;
     if(force || nearBottom) stream.scrollTop = stream.scrollHeight;
   });

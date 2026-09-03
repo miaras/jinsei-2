@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { after, NextResponse } from 'next/server';
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import Replicate from 'replicate';
 import { toKana } from 'wanakana';
 import {
   bcrypt,
@@ -22,7 +23,7 @@ const BASE_MODEL = process.env.OPENROUTER_MODEL || 'deepseek/deepseek-v4-flash';
 // variant sorts by generation throughput, which can still have a slow TTFT.
 const MODEL = BASE_MODEL.replace(/:nitro$/, '');
 const FREE_TURN_LIMIT = 20;
-const IMAGE_TIMEOUT_MS = 5 * 60 * 1000;
+const REPLICATE_IMAGE_MODEL = 'aisha-ai-official/nsfw-flux-dev:fb4f086702d6a301ca32c170d926239324a7b7b2f0afc3d232a9c4be382dc3fa';
 const GUEST_USAGE_COOKIE = 'jinsei_guest_usage';
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(['active', 'trialing']);
 const anonTurnLog = new Map();
@@ -245,17 +246,19 @@ async function generateSceneImage(request, user) {
   const entitlement = await entitlementForUser(user);
   if (!entitlement.pictures) return json({ error: 'The Pictures plan is required.', code: 'PICTURES_PLAN_REQUIRED' }, 402);
   if (!process.env.REPLICATE_API_TOKEN) return json({ error: 'Server is missing REPLICATE_API_TOKEN.' }, 500);
-  const { prompt, country, lifeId, turnNumber } = await request.json().catch(() => ({}));
-  if (typeof prompt !== 'string' || !prompt.trim() || prompt.length > 1000) return json({ error: 'A valid image prompt is required.' }, 400);
-  const imageLocales = { japan: 'Japan', china: 'China', korea: 'South Korea', hanja: 'South Korea' };
-  const imageLocale = imageLocales[country];
-  if (!imageLocale) return json({ error: 'A valid country is required.' }, 400);
-  const scenePrompt = prompt.trim().split(/\s+/).slice(0, 100).join(' ');
-  const portraitDirection = ' Include an attractive adult as a prominent principal subject, clearly visible in the foreground or middle ground. Clothes are very revealing. Anime style.';
-  const imagePrompt = `${imageLocale}: ${scenePrompt}${portraitDirection}`.slice(0, 1000);
+  const { narration, characterAppearance, country, lifeId, turnNumber } = await request.json().catch(() => ({}));
+  if (typeof narration !== 'string' || !narration.trim() || narration.length > 1000) return json({ error: 'Valid narration is required.' }, 400);
+  if (characterAppearance !== undefined && (typeof characterAppearance !== 'string' || characterAppearance.length > 1000)) return json({ error: 'Character appearance is invalid.' }, 400);
+  if (!['japan', 'china', 'korea', 'hanja'].includes(country)) return json({ error: 'A valid country is required.' }, 400);
+  const appearance = typeof characterAppearance === 'string' ? characterAppearance.trim() : '';
+  const promptDirection = 'Generate a realistic NSFW picture with one NSFW adult character prominently in the center facing the camera.';
+  const imagePrompt = [
+    narration.trim(),
+    appearance ? `Visible character appearance: ${appearance}` : '',
+    `Prompt direction: ${promptDirection}`
+  ].filter(Boolean).join('\n\n');
   if (typeof lifeId !== 'string' || !/^[0-9a-f-]{36}$/i.test(lifeId)) return json({ error: 'A valid life id is required.' }, 400);
   if (!Number.isInteger(turnNumber) || turnNumber < 0) return json({ error: 'A valid turn number is required.' }, 400);
-  const imageSeed = parseInt(createHash('sha256').update(lifeId).digest('hex').slice(0, 8), 16);
 
   const client = supabaseAdmin();
   const { data: life, error: lifeError } = await client.from('jinsei_lives')
@@ -284,72 +287,49 @@ async function generateSceneImage(request, user) {
       turnNumber,
       prompt: imagePrompt
     });
-    const imageDeadline = Date.now() + IMAGE_TIMEOUT_MS;
-    const predictionResponse = await fetch('https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.REPLICATE_API_TOKEN}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'wait=60',
-        'Cancel-After': '5m'
+    const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN });
+    const output = await replicate.run(REPLICATE_IMAGE_MODEL, {
+      input: {
+        prompt: imagePrompt,
+        seed: -1,
+        steps: 8,
+        width: 512,
+        height: 288
       },
-      body: JSON.stringify({
-        input: {
-          prompt: imagePrompt,
-          seed: imageSeed,
-          go_fast: false,
-          num_inference_steps: 4,
-          num_outputs: 1,
-          aspect_ratio: '16:9',
-          output_format: 'webp',
-          disable_safety_checker: true,
-          output_quality: 80
-        }
-      }),
+      wait: { mode: 'block', timeout: 60 },
       signal: request.signal
     });
-    let prediction = await predictionResponse.json().catch(() => ({}));
-    if (!predictionResponse.ok) throw new Error(prediction.detail || prediction.error || 'Replicate returned an error.');
-    while (!prediction.output && ['starting', 'processing'].includes(prediction.status)) {
-      if (Date.now() >= imageDeadline) throw new Error('Replicate did not finish the picture within five minutes.');
-      const pollUrl = prediction.urls?.get;
-      if (typeof pollUrl !== 'string') throw new Error('Replicate did not provide a prediction status URL.');
-      const parsedPollUrl = new URL(pollUrl);
-      if (parsedPollUrl.protocol !== 'https:' || parsedPollUrl.hostname !== 'api.replicate.com') {
-        throw new Error('Replicate returned an unexpected prediction status URL.');
-      }
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      const pollResponse = await fetch(pollUrl, {
-        headers: { 'Authorization': `Bearer ${process.env.REPLICATE_API_TOKEN}` },
-        signal: request.signal
-      });
-      prediction = await pollResponse.json().catch(() => ({}));
-      if (!pollResponse.ok) throw new Error(prediction.detail || prediction.error || 'Could not check the Replicate prediction.');
-    }
-    if (['failed', 'canceled', 'aborted'].includes(prediction.status)) {
-      throw new Error(prediction.error || `Replicate prediction ${prediction.status}.`);
-    }
-    const outputUrl = Array.isArray(prediction.output) ? prediction.output[0] : prediction.output;
-    if (typeof outputUrl !== 'string') throw new Error('Replicate did not return a generated picture.');
-    const parsedOutput = new URL(outputUrl);
-    if (parsedOutput.protocol !== 'https:' || !(parsedOutput.hostname === 'replicate.delivery' || parsedOutput.hostname.endsWith('.replicate.delivery'))) {
-      throw new Error('Replicate returned an unexpected output URL.');
-    }
-    const imageResponse = await fetch(outputUrl, { signal: request.signal });
-    if (!imageResponse.ok) throw new Error('Could not download the generated picture.');
-    const image = Buffer.from(await imageResponse.arrayBuffer());
+    const outputFile = Array.isArray(output) ? output[0] : output;
+    if (!outputFile || typeof outputFile.blob !== 'function') throw new Error('Replicate did not return a generated picture.');
+    const imageBlob = await outputFile.blob();
+    const image = Buffer.from(await imageBlob.arrayBuffer());
     if (!image.length || image.length > 10 * 1024 * 1024) throw new Error('Generated picture has an invalid size.');
-    const storagePath = `${user.id}/${lifeId}/${turnNumber}-${generation.id}.webp`;
-    const { error: uploadError } = await client.storage.from('jinsei-images').upload(storagePath, image, {
-      contentType: 'image/webp',
-      cacheControl: '31536000',
-      upsert: false
+    const imageType = imageBlob.type || 'image/png';
+    const extension = imageType.includes('webp') ? 'webp' : imageType.includes('jpeg') ? 'jpg' : 'png';
+    const storagePath = `${user.id}/${lifeId}/${turnNumber}-${generation.id}.${extension}`;
+    after(async () => {
+      try {
+        const { error: uploadError } = await client.storage.from('jinsei-images').upload(storagePath, image, {
+          contentType: imageType,
+          cacheControl: '31536000',
+          upsert: false
+        });
+        if (uploadError) throw uploadError;
+        const { error: updateError } = await client.from('jinsei_image_generations')
+          .update({ storage_path: storagePath }).eq('id', generation.id);
+        if (updateError) throw updateError;
+      } catch (error) {
+        await client.from('jinsei_image_generations').delete().eq('id', generation.id);
+        console.error('Scene image persistence failed:', error);
+      }
     });
-    if (uploadError) throw uploadError;
-    const { error: updateError } = await client.from('jinsei_image_generations')
-      .update({ storage_path: storagePath }).eq('id', generation.id);
-    if (updateError) throw updateError;
-    return json({ url: `/api/generated-image?id=${generation.id}` });
+    return new Response(image, {
+      headers: {
+        'Content-Type': imageType,
+        'X-Jinsei-Image-Id': generation.id,
+        'Cache-Control': 'no-store'
+      }
+    });
   } catch (error) {
     await client.from('jinsei_image_generations').delete().eq('id', generation.id);
     console.error('Scene image generation failed:', error);
@@ -532,9 +512,13 @@ export async function GET(request, context) {
     if (!generation?.storage_path) return json({ error: 'Picture not found.' }, 404);
     const { data: image, error: downloadError } = await supabaseAdmin().storage.from('jinsei-images').download(generation.storage_path);
     if (downloadError || !image) return json({ error: 'Picture not found.' }, 404);
+    const extension = generation.storage_path.split('.').pop()?.toLowerCase();
+    const storedType = image.type && image.type !== 'application/octet-stream'
+      ? image.type
+      : extension === 'png' ? 'image/png' : extension === 'jpg' || extension === 'jpeg' ? 'image/jpeg' : 'image/webp';
     return new Response(await image.arrayBuffer(), {
       headers: {
-        'Content-Type': 'image/webp',
+        'Content-Type': storedType,
         'Cache-Control': 'private, max-age=31536000, immutable'
       }
     });

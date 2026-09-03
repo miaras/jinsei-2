@@ -5,7 +5,9 @@ import Script from 'next/script';
 function legacyPageParts() {
   const html = fs.readFileSync(path.join(process.cwd(), 'public', 'index.html'), 'utf8');
   return {
-    css: html.match(/<style>([\s\S]*?)<\/style>/)?.[1] || '',
+    css: [...html.matchAll(/<style>([\s\S]*?)<\/style>/g)]
+      .map((match) => match[1])
+      .join('\n'),
     body: html.match(/<body>([\s\S]*?)<script>/)?.[1] || '',
     script: html.match(/<script>([\s\S]*?)<\/script>/)?.[1] || ''
   };
