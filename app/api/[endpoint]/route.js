@@ -26,7 +26,7 @@ const MODEL = BASE_MODEL.replace(/:nitro$/, '');
 const FREE_TURN_LIMIT = 20;
 const REPLICATE_IMAGE_MODELS = {
   illustrious: 'aisha-ai-official/wai-nsfw-illustrious-v8:4d3aebd63448c9795a7b55b5e9a2b69433f1fd3437af5ef63b8ac6531ab269c9',
-  flux: 'aisha-ai-official/flux.1dev-uncensored-msfluxnsfw-v3:b477d8fc3a62e591c6224e10020538c4a9c340fb1f494891aff60019ffd5bc48'
+  flux: 'aisha-ai-official/nsfw-flux-dev:fb4f086702d6a301ca32c170d926239324a7b7b2f0afc3d232a9c4be382dc3fa'
 };
 const REPLICATE_IMAGE_MODEL = REPLICATE_IMAGE_MODELS.illustrious;
 const GUEST_USAGE_COOKIE = 'jinsei_guest_usage';
@@ -34,10 +34,49 @@ const ACTIVE_SUBSCRIPTION_STATUSES = new Set(['active', 'trialing']);
 const anonTurnLog = new Map();
 const speechLog = new Map();
 const SPEECH_BUCKET = 'jinsei-speech';
+const SUPPORTED_COUNTRIES = new Set([
+  'japan', 'china', 'korea', 'hanja',
+  'thailand', 'vietnam', 'indonesia', 'india', 'turkey', 'saudi_arabia', 'philippines',
+  'france', 'germany', 'italy', 'spain', 'russia', 'greece', 'netherlands', 'sweden', 'poland',
+  'egypt', 'kenya', 'nigeria', 'south_africa', 'morocco',
+  'usa', 'mexico', 'canada', 'cuba',
+  'brazil', 'colombia', 'peru', 'argentina',
+  'new_zealand', 'fiji', 'hawaii'
+]);
+
 const VOICES = {
   japan: { languageCode: 'ja-JP', name: 'ja-JP-Wavenet-B' },
   china: { languageCode: 'cmn-CN', name: 'cmn-CN-Wavenet-A' },
-  korea: { languageCode: 'ko-KR', name: 'ko-KR-Wavenet-B' }
+  korea: { languageCode: 'ko-KR', name: 'ko-KR-Wavenet-B' },
+  hanja: { languageCode: 'ko-KR', name: 'ko-KR-Wavenet-B' },
+  france: { languageCode: 'fr-FR', name: 'fr-FR-Wavenet-C' },
+  germany: { languageCode: 'de-DE', name: 'de-DE-Wavenet-B' },
+  italy: { languageCode: 'it-IT', name: 'it-IT-Wavenet-A' },
+  spain: { languageCode: 'es-ES', name: 'es-ES-Wavenet-B' },
+  russia: { languageCode: 'ru-RU', name: 'ru-RU-Wavenet-C' },
+  greece: { languageCode: 'el-GR', name: 'el-GR-Wavenet-A' },
+  netherlands: { languageCode: 'nl-NL', name: 'nl-NL-Wavenet-B' },
+  sweden: { languageCode: 'sv-SE', name: 'sv-SE-Wavenet-A' },
+  poland: { languageCode: 'pl-PL', name: 'pl-PL-Wavenet-B' },
+  thailand: { languageCode: 'th-TH', name: 'th-TH-Standard-A' },
+  vietnam: { languageCode: 'vi-VN', name: 'vi-VN-Wavenet-B' },
+  indonesia: { languageCode: 'id-ID', name: 'id-ID-Wavenet-B' },
+  india: { languageCode: 'hi-IN', name: 'hi-IN-Wavenet-B' },
+  turkey: { languageCode: 'tr-TR', name: 'tr-TR-Wavenet-B' },
+  saudi_arabia: { languageCode: 'ar-XA', name: 'ar-XA-Wavenet-B' },
+  philippines: { languageCode: 'fil-PH', name: 'fil-PH-Wavenet-B' },
+  egypt: { languageCode: 'ar-XA', name: 'ar-XA-Wavenet-A' },
+  kenya: { languageCode: 'sw-TZ', name: 'sw-TZ-Standard-A' },
+  south_africa: { languageCode: 'en-ZA', name: 'en-ZA-Wavenet-A' },
+  morocco: { languageCode: 'ar-XA', name: 'ar-XA-Wavenet-C' },
+  usa: { languageCode: 'en-US', name: 'en-US-Wavenet-D' },
+  mexico: { languageCode: 'es-US', name: 'es-US-Wavenet-B' },
+  canada: { languageCode: 'fr-CA', name: 'fr-CA-Wavenet-B' },
+  cuba: { languageCode: 'es-US', name: 'es-US-Wavenet-A' },
+  brazil: { languageCode: 'pt-BR', name: 'pt-BR-Wavenet-B' },
+  colombia: { languageCode: 'es-US', name: 'es-US-Wavenet-C' },
+  argentina: { languageCode: 'es-US', name: 'es-US-Wavenet-B' },
+  new_zealand: { languageCode: 'en-NZ', name: 'en-NZ-Wavenet-B' }
 };
 
 function json(data, status = 200) {
@@ -54,12 +93,12 @@ function formatCharacterAppearance(name, profile) {
   return `${name}: ${[profile.face, profile.hair, profile.height, clothing].filter(Boolean).join('; ')}`;
 }
 
-async function relevantCharacterDescriptions(narration, scene, appearances, signal) {
+async function relevantCharacterDescriptions(narration, imagePromptForModel, appearances, signal) {
   if (!appearances || typeof appearances !== 'object' || Array.isArray(appearances)) return '';
   const entries = Object.entries(appearances).filter(([name]) => name.trim()).slice(0, 50);
   if (!entries.length || !process.env.OPENROUTER_API_KEY) return '';
   const names = entries.map(([name]) => name);
-  const visibleText = `${narration}\n${scene}`.toLowerCase();
+  const visibleText = `${narration}\n${imagePromptForModel}`.toLowerCase();
   const fallbackNames = names.filter(name => visibleText.includes(name.toLowerCase()));
   let selectedNames = fallbackNames;
   try {
@@ -73,8 +112,8 @@ async function relevantCharacterDescriptions(narration, scene, appearances, sign
       body: JSON.stringify({
         model: IMAGE_CHARACTER_FILTER_MODEL,
         messages: [
-          { role: 'system', content: 'Select ONE character physically visible in this scene. Return strict JSON: {"name":"exact registry name"}. Use only supplied registry names. Exclude characters who are merely remembered, mentioned, remote, or off-screen.' },
-          { role: 'user', content: JSON.stringify({ narration, scene, registryNames: names }) }
+          { role: 'system', content: 'Select ONE character physically visible in this imagePromptForModel. Return strict JSON: {"name":"exact registry name"}. Use only supplied registry names. Exclude characters who are merely remembered, mentioned, remote, or off-screen.' },
+          { role: 'user', content: JSON.stringify({ narration, imagePromptForModel, registryNames: names }) }
         ],
         response_format: { type: 'json_object' },
         temperature: 0,
@@ -297,22 +336,23 @@ async function handlePaddleWebhook(request) {
   return json({ received: true });
 }
 
-async function generateSceneImage(request, user) {
+async function generateimagePromptForModelImage(request, user) {
   const entitlement = await entitlementForUser(user);
   if (!entitlement.pictures) return json({ error: 'The Pictures plan is required.', code: 'PICTURES_PLAN_REQUIRED' }, 402);
   if (!process.env.REPLICATE_API_TOKEN) return json({ error: 'Server is missing REPLICATE_API_TOKEN.' }, 500);
-  const { narration = '', scene = '', appearances, country, lifeId, turnNumber, imageModel = 'illustrious', nsfw = false } = await request.json().catch(() => ({}));
+  const { narration = '', imagePromptForModel = '', scene = '', appearances, country, lifeId, turnNumber, imageModel = 'illustrious', nsfw = false } = await request.json().catch(() => ({}));
   if (narration !== undefined && narration !== null && (typeof narration !== 'string' || narration.length > 1000)) return json({ error: 'Valid narration is required.' }, 400);
-  if (scene !== undefined && scene !== null && (typeof scene !== 'string' || scene.length > 4000)) return json({ error: 'A valid scene is required.' }, 400);
+  const promptInput = (typeof imagePromptForModel === 'string' && imagePromptForModel.trim()) || (typeof scene === 'string' && scene.trim()) || '';
+  if (promptInput.length > 4000) return json({ error: 'A valid scene or prompt is required.' }, 400);
   if (appearances !== undefined && (!appearances || typeof appearances !== 'object' || Array.isArray(appearances) || JSON.stringify(appearances).length > 50_000)) return json({ error: 'Appearances are invalid.' }, 400);
-  if (!['japan', 'china', 'korea', 'hanja'].includes(country)) return json({ error: 'A valid country is required.' }, 400);
-  const sceneText = typeof scene === 'string' ? scene.trim() : '';
-  const promptText = sceneText || (typeof narration === 'string' ? narration.trim() : '');
-  if (!promptText) return json({ error: 'A valid scene or narration prompt is required.' }, 400);
+  if (!SUPPORTED_COUNTRIES.has(country)) return json({ error: 'A valid country is required.' }, 400);
+  const imagePromptForModelText = promptInput;
+  const promptText = imagePromptForModelText || (typeof narration === 'string' ? narration.trim() : '');
+  if (!promptText) return json({ error: 'A valid imagePromptForModel or narration prompt is required.' }, 400);
   const selectedModelKey = imageModel === 'flux' ? 'flux' : 'illustrious';
   const selectedModelId = REPLICATE_IMAGE_MODELS[selectedModelKey];
   console.log("Image model is " + selectedModelKey + " (" + selectedModelId + "), prompt: " + promptText);
-  //const characterDescriptions = await relevantCharacterDescriptions(narration.trim(), sceneText, appearances, request.signal);
+  //const characterDescriptions = await relevantCharacterDescriptions(narration.trim(), imagePromptForModelText, appearances, request.signal);
   const characterDescriptions = "";
   //const promptDirection = 'NSFW, cleavage, sex, oral sex, anal sex, lesbian, futa, pussy, BDSM, porn, one character';
   //const promptDirection = 'cleavage, sex, anal sex, BDSM, hardcore porn, hentai'
@@ -320,6 +360,7 @@ async function generateSceneImage(request, user) {
   let promptDirection = 'cleavage';
   if (isNsfw) promptDirection += ', sex, anal sex, BDSM, hardcore porn, hentai';
   const imagePrompt = [
+    narration,
     promptText,
     characterDescriptions ? `${characterDescriptions}` : '',
     `${promptDirection}`
@@ -363,7 +404,7 @@ async function generateSceneImage(request, user) {
           width: 768,
           height: 768,
           steps: 20,
-          cfg_scale: 5,
+          guidance_scale: 3.5,
           seed: -1
         }
       : {
@@ -417,7 +458,7 @@ async function generateSceneImage(request, user) {
         if (updateError) throw updateError;
       } catch (error) {
         await client.from('jinsei_image_generations').delete().eq('id', generation.id);
-        console.error('Scene image persistence failed:', error);
+        console.error('imagePromptForModel image persistence failed:', error);
       }
     });
     return new Response(image, {
@@ -429,7 +470,7 @@ async function generateSceneImage(request, user) {
     });
   } catch (error) {
     await client.from('jinsei_image_generations').delete().eq('id', generation.id);
-    console.error('Scene image generation failed:', error);
+    console.error('imagePromptForModel image generation failed:', error);
     return json({ error: error.message || 'Image generation failed.' }, 502);
   }
 }
@@ -731,7 +772,7 @@ export async function POST(request, context) {
   if (name === 'image') {
     const auth = await requireUser(request);
     if (auth.response) return auth.response;
-    return generateSceneImage(request, auth.user);
+    return generateimagePromptForModelImage(request, auth.user);
   }
 
   if (name === 'speech') return synthesizeSpeech(request);

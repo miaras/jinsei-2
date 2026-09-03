@@ -114,18 +114,35 @@ input{font-family:inherit}
 }
 #name-input:focus{outline:2px solid var(--ai);outline-offset:1px}
 .levels{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px}
-#destinations{grid-template-columns:repeat(4,1fr)}
+.dest-continents{
+  display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;padding-bottom:2px;
+}
+.dest-tab{
+  background:var(--paper);border:1px solid var(--line);padding:4px 11px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:var(--ink-soft);
+  cursor:pointer;border-radius:12px;white-space:nowrap;transition:all .15s ease;outline:none;
+}
+.dest-tab:hover{border-color:var(--ink);color:var(--ink)}
+.dest-tab.sel{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+#destinations{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));
+  gap:9px;margin-bottom:24px;max-height:280px;overflow-y:auto;padding:4px 3px;
+  border:1px solid rgba(0,0,0,.06);background:rgba(0,0,0,.015);border-radius:4px;
+}
 .level-btn{
-  border:1px solid var(--line);background:var(--paper);padding:12px 8px;text-align:center;
-  transition:transform .08s;
+  border:1px solid var(--line);background:var(--paper);padding:10px 8px;text-align:center;
+  transition:transform .08s;cursor:pointer;
 }
 .level-btn:focus-visible{outline:2px solid var(--ai)}
 .level-btn .jp{font-family:var(--disp);font-weight:600;font-size:18px;display:block}
 .level-btn .en{font-size:11.5px;color:var(--ink-soft);display:block;margin-top:3px}
 .level-btn.sel{border-color:var(--ai);background:var(--ai-soft);transform:translate(-1px,-1px);box-shadow:2px 2px 0 var(--ai)}
 .world-levels{grid-template-columns:repeat(2,1fr);margin-bottom:22px}
-.destination-btn .jp{font-size:23px}
-.destination-btn .en{font-size:10.5px}
+.destination-btn{
+  min-height:62px;display:flex;flex-direction:column;justify-content:center;
+}
+.destination-btn .jp{font-size:17px;line-height:1.2}
+.destination-btn .en{font-size:9.5px;line-height:1.25;margin-top:3px}
 .hardcore-btn .jp{color:var(--shu)}
 .hardcore-btn.sel{border-color:var(--shu);background:rgba(185,58,46,.1);box-shadow:2px 2px 0 var(--shu)}
 #begin-btn{
@@ -368,23 +385,23 @@ header{
 
 #stream{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:26px 26px 10px}
 .entry{max-width:640px;margin:0 auto 22px}
-.scene-img{
+.imagePromptForModel-img{
   width:100%;aspect-ratio:1/1;margin-bottom:14px;overflow:hidden;
   border:1px solid var(--line);background:var(--paper-deep);
 }
-.scene-img img{
+.imagePromptForModel-img img{
   width:100%;height:100%;object-fit:cover;display:block;
   filter:saturate(.85) sepia(.06);
 }
-.scene-img.loading{
+.imagePromptForModel-img.loading{
   position:relative;
   background:linear-gradient(100deg,var(--paper-deep) 40%,#EFE8D6 50%,var(--paper-deep) 60%);
   background-size:200% 100%;animation:shimmer 1.6s ease-in-out infinite;
 }
-.scene-debug{margin:18px 0 0;padding:12px 14px;border:1px dashed var(--line);background:rgba(0,0,0,.035);color:var(--ink-soft);font:11px/1.55 var(--mono);white-space:pre-wrap;overflow-wrap:anywhere;max-height:240px;overflow-y:auto;position:relative;clear:both;display:block;box-sizing:border-box}
-.scene-debug::before{content:'DEBUG · LLM RESPONSE';display:block;margin-bottom:8px;color:var(--shu);font-weight:700;letter-spacing:.12em;position:sticky;top:0;background:var(--paper);padding:2px 0 4px;z-index:2}
+.imagePromptForModel-debug{margin:18px 0 0;padding:12px 14px;border:1px dashed var(--line);background:rgba(0,0,0,.035);color:var(--ink-soft);font:11px/1.55 var(--mono);white-space:pre-wrap;overflow-wrap:anywhere;max-height:240px;overflow-y:auto;position:relative;clear:both;display:block;box-sizing:border-box}
+.imagePromptForModel-debug::before{content:'DEBUG · LLM RESPONSE';display:block;margin-bottom:8px;color:var(--shu);font-weight:700;letter-spacing:.12em;position:sticky;top:0;background:var(--paper);padding:2px 0 4px;z-index:2}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-@media (prefers-reduced-motion: reduce){ .scene-img.loading{animation:none} }
+@media (prefers-reduced-motion: reduce){ .imagePromptForModel-img.loading{animation:none} }
 .narr{font-family:var(--disp);font-size:16.5px;line-height:1.85;color:var(--ink)}
 .narr em{color:var(--ai);font-style:normal}
 .narr.live::after, .npc .jp.live::after{
@@ -665,7 +682,7 @@ button:active{transform:translateY(1px)}
 #game{height:calc(100dvh - 42px);margin-top:42px}#game.on{grid-template-columns:minmax(0,1fr) 330px}
 main{border-color:var(--line)}header{padding:13px 24px;border-color:var(--line);background:rgba(11,13,12,.92)}.brand{font-family:var(--body);font-size:19px;font-weight:950;letter-spacing:-.04em}.brand::after{content:" / STORY FEED";font:500 9px/1 var(--mono);letter-spacing:.15em;color:var(--ai)}
 #hud{font-size:10px}.entry{max-width:720px;margin-bottom:30px}.narr{font-family:var(--body);font-size:17px;line-height:1.78}.narr em{color:var(--ai)}
-.scene-img{border:0;border-left:4px solid var(--ai);background:var(--paper-deep)}
+.imagePromptForModel-img{border:0;border-left:4px solid var(--ai);background:var(--paper-deep)}
 .npc{margin-top:18px;padding:14px 18px;border-left:1px solid var(--ai);background:var(--ai-soft)}.npc .who{font-size:9px}.npc .jp{font-family:var(--body);font-size:20px;font-weight:750}.npc .en{border-color:var(--line)}
 .you .bubble{background:var(--ai);color:#0B0D0C;font-weight:650;padding:11px 16px}.you .bubble.action{background:transparent;color:var(--ink-soft);border:1px solid var(--line)}
 .feedback{background:var(--paper-deep);border:1px solid var(--line)}.feedback .better{font-family:var(--body)}
@@ -727,7 +744,7 @@ button{letter-spacing:.01em}
 main{border-color:var(--line);background:var(--paper)}
 header{min-height:56px;padding:0 27px;border-color:var(--line);background:rgba(242,239,232,.95);align-items:center}.brand{font:700 19px/1 var(--disp);letter-spacing:.05em}.brand::after{content:" / WORLD";font:500 8px/1 var(--mono);letter-spacing:.16em;color:var(--ink-soft)}#hud{margin-left:auto;font-size:9px;letter-spacing:.09em}
 #stream{padding:42px 28px 16px}.entry{max-width:690px;margin-bottom:38px}.entry::before{content:"FIELD NOTE";display:block;margin-bottom:10px;font:500 8px/1 var(--mono);letter-spacing:.18em;color:var(--ink-soft)}
-.narr{font:500 clamp(17px,1.55vw,21px)/1.9 var(--disp)}.narr em{color:var(--shu);font-style:normal}.scene-img{aspect-ratio:1/1;border:0;border-bottom:1px solid var(--ink);filter:none}.scene-img img{filter:saturate(.62) contrast(.96) sepia(.08)}
+.narr{font:500 clamp(17px,1.55vw,21px)/1.9 var(--disp)}.narr em{color:var(--shu);font-style:normal}.imagePromptForModel-img{aspect-ratio:1/1;border:0;border-bottom:1px solid var(--ink);filter:none}.imagePromptForModel-img img{filter:saturate(.62) contrast(.96) sepia(.08)}
 .npc{margin-top:20px;padding:15px 0 2px 22px;border-left:2px solid var(--shu);background:transparent}.npc .who{font-size:8px;color:var(--shu)}.npc .jp{font:600 21px/1.8 var(--disp)}.npc .en{border-color:var(--line)}
 .reveal-btn{border:0;border-bottom:1px solid var(--line);padding:3px 0}.you .bubble{background:var(--ink);color:var(--paper);padding:10px 15px}.you .bubble.action{background:transparent;color:var(--ink-soft);border:1px solid var(--line)}
 .feedback{background:transparent;border:0;border-left:1px solid var(--line);padding:5px 0 5px 13px}.feedback.miss{border-color:var(--shu)}.feedback .better{font-family:var(--disp)}
@@ -796,7 +813,7 @@ aside{padding:18px;background:var(--paper-deep);border-left:0}.card{background:r
       <article class="plan-card featured">
         <div class="plan-name" id="pictures-name">Unlimited + Pictures</div>
         <div class="plan-price">$9.99 <span id="pictures-period">/ month</span></div>
-        <div class="plan-copy" id="pictures-copy">Everything in Unlimited, with a generated scene picture for every game turn.</div>
+        <div class="plan-copy" id="pictures-copy">Everything in Unlimited, with a generated imagePromptForModel picture for every game turn.</div>
         <button class="plan-action" id="buy-pictures" type="button">Choose Pictures</button>
       </article>
     </div>
@@ -827,7 +844,7 @@ aside{padding:18px;background:var(--paper-deep);border-left:0}.card{background:r
   <h1>Privacy Notice</h1><p class="legal-date">Effective date: August 8, 2026</p>
   <p>This notice explains how JINSEI processes personal data when you use the service.</p>
   <h2>Information we process</h2><p>We process account details, saved-game information, game messages and actions, learned words, subscription status, and technical information needed to operate and protect the service. Paddle processes payment details; JINSEI does not store full payment-card numbers.</p>
-  <h2>How we use it</h2><p>We use this information to provide the game, save and resume lives, enforce plan limits, provide support, prevent abuse, and maintain the service. For paid picture generation, prompts and game context are processed to generate the requested scene.</p>
+  <h2>How we use it</h2><p>We use this information to provide the game, save and resume lives, enforce plan limits, provide support, prevent abuse, and maintain the service. For paid picture generation, prompts and game context are processed to generate the requested imagePromptForModel.</p>
   <h2>Service providers</h2><p>We use Supabase for authentication, database, and storage; Paddle for merchant-of-record billing; OpenRouter for story-model access; Replicate for paid image generation; and Google Cloud Text-to-Speech where enabled.</p>
   <h2>Retention and deletion</h2><p>We retain account and saved-life data while your account is active or as needed to provide the service, resolve disputes, meet legal obligations, and prevent fraud. Billing records may be retained where required by law.</p>
   <h2>Your choices</h2><p>You can stop using the service, cancel through Paddle’s customer portal, and request access, correction, or deletion where applicable law provides those rights. We do not sell personal information or use game content for targeted advertising.</p>
@@ -871,12 +888,15 @@ aside{padding:18px;background:var(--paper-deep);border-left:0}.card{background:r
     <label class="field-label" for="name-input">Your name / 名前</label>
     <input id="name-input" placeholder="e.g. Miara" maxlength="24" autocomplete="off">
     <span class="field-label" id="destination-label">Your destination / 行き先</span>
-    <div class="levels" id="destinations">
-      <button class="level-btn destination-btn sel" data-country="japan"><span class="jp">日本</span><span class="en">Japan · Japanese</span></button>
-      <button class="level-btn destination-btn" data-country="china"><span class="jp">中国</span><span class="en">China · Mandarin</span></button>
-      <button class="level-btn destination-btn" data-country="korea"><span class="jp">한국</span><span class="en">Korea · Korean</span></button>
-      <button class="level-btn destination-btn" data-country="hanja"><span class="jp">韓國</span><span class="en">Korea · Hanja</span></button>
+    <div class="dest-continents" id="dest-continents" role="tablist" aria-label="Filter continents">
+      <button type="button" class="dest-tab sel" data-continent="all">All (36)</button>
+      <button type="button" class="dest-tab" data-continent="asia">Asia</button>
+      <button type="button" class="dest-tab" data-continent="europe">Europe</button>
+      <button type="button" class="dest-tab" data-continent="africa">Africa</button>
+      <button type="button" class="dest-tab" data-continent="americas">Americas</button>
+      <button type="button" class="dest-tab" data-continent="oceania">Oceania</button>
     </div>
+    <div class="levels" id="destinations"></div>
     <span class="field-label" id="language-label">Your Japanese / 日本語のレベル</span>
     <div class="levels" id="levels">
       <button class="level-btn" data-lv="zero"><span class="jp">ゼロ</span><span class="en">A few words at best</span></button>
@@ -1012,13 +1032,82 @@ const S = {
   turnCount:0, signupPrompted:false, summary:''
 };
 const HINT_COST = 500;
+function getHintCost(d = destination()){
+  if(d && typeof d.hintCost === 'number') return d.hintCost;
+  const cash = d?.cash || 1000;
+  const raw = cash * 0.0028;
+  if(raw >= 10000) return Math.round(raw / 5000) * 5000;
+  if(raw >= 1000) return Math.round(raw / 500) * 500;
+  if(raw >= 100) return Math.round(raw / 50) * 50;
+  if(raw >= 10) return Math.round(raw / 5) * 5;
+  return Math.max(1, Math.round(raw));
+}
+function formatHintCost(d = destination()){
+  const cost = getHintCost(d);
+  return `${d.currency}${cost.toLocaleString()}`;
+}
 const DESTINATIONS = {
-  japan:{country:'Japan',language:'Japanese',script:'日本語',romanization:'rōmaji',cash:180000,currency:'¥',currencyName:'yen',visa:'Temporary Visitor (90 days)',lede:'Begin at Tokyo Narita Airport with ¥180,000 and whatever Japanese you carry in your head.'},
-  china:{country:'China',language:'Mandarin Chinese',script:'中文',romanization:'pinyin',cash:8000,currency:'¥',currencyName:'yuan',visa:'Temporary Visitor',lede:'Begin somewhere unexpected in China with ¥8,000 and whatever Mandarin you carry in your head.'},
-  korea:{country:'Korea',language:'Korean',script:'한국어',romanization:'romanization',cash:800000,currency:'₩',currencyName:'won',visa:'Temporary Visitor (90 days)',lede:'Begin somewhere unexpected in Korea with ₩800,000 and whatever Korean you carry in your head.'},
-  hanja:{country:'Korea',language:'Korean',script:'한글·漢字 혼용',romanization:'Hangul reading',cash:800000,currency:'₩',currencyName:'won',visa:'Temporary Visitor (90 days)',lede:'한국어 속 漢字語를 배우며, 소설 같은 뜻밖의 장소에서 삶을 시작합니다.'}
+  // Asia
+  japan:{country:'Japan',language:'Japanese',script:'日本語',romanization:'rōmaji',cash:180000,currency:'¥',currencyName:'yen',hintCost:500,continent:'asia',visa:'Temporary Visitor (90 days)',lede:'Begin at Tokyo Narita Airport with ¥180,000 and whatever Japanese you carry in your head.'},
+  china:{country:'China',language:'Mandarin Chinese',script:'中文',romanization:'pinyin',cash:8000,currency:'¥',currencyName:'yuan',hintCost:20,continent:'asia',visa:'Temporary Visitor',lede:'Begin somewhere unexpected in China with ¥8,000 and whatever Mandarin you carry in your head.'},
+  korea:{country:'Korea',language:'Korean',script:'한국어',romanization:'romanization',cash:800000,currency:'₩',currencyName:'won',hintCost:2000,continent:'asia',visa:'Temporary Visitor (90 days)',lede:'Begin somewhere unexpected in Korea with ₩800,000 and whatever Korean you carry in your head.'},
+  hanja:{country:'Korea',language:'Korean',script:'한글·漢字 혼용',romanization:'Hangul reading',cash:800000,currency:'₩',currencyName:'won',hintCost:2000,continent:'asia',visa:'Temporary Visitor (90 days)',lede:'한국어 속 漢字語를 배우며, 소설 같은 뜻밖의 장소에서 삶을 시작합니다.'},
+  thailand:{country:'Thailand',language:'Thai',script:'ภาษาไทย',romanization:'RTGS transcription',cash:45000,currency:'฿',currencyName:'baht',hintCost:120,continent:'asia',visa:'Tourist Visa (60 days)',lede:'Begin amidst the humid neon and temple bells of Thailand with ฿45,000 and whatever Thai you carry in your head.'},
+  vietnam:{country:'Vietnam',language:'Vietnamese',script:'Tiếng Việt',romanization:'quốc ngữ',cash:30000000,currency:'₫',currencyName:'dong',hintCost:80000,continent:'asia',visa:'Tourist E-Visa (90 days)',lede:'Begin among the buzzing motorbikes and street stalls of Vietnam with ₫30,000,000 and whatever Vietnamese you carry in your head.'},
+  indonesia:{country:'Indonesia',language:'Indonesian',script:'Bahasa Indonesia',romanization:'Latin alphabet',cash:20000000,currency:'Rp ',currencyName:'rupiah',hintCost:50000,continent:'asia',visa:'Visa on Arrival (30 days)',lede:'Begin across the volcanic islands of Indonesia with Rp 20,000,000 and whatever Bahasa Indonesia you carry in your head.'},
+  india:{country:'India',language:'Hindi',script:'हिन्दी',romanization:'transliteration',cash:100000,currency:'₹',currencyName:'rupees',hintCost:250,continent:'asia',visa:'Tourist E-Visa (30 days)',lede:'Begin amid the vibrant morning chai stalls of India with ₹100,000 and whatever Hindi you carry in your head.'},
+  turkey:{country:'Turkey',language:'Turkish',script:'Türkçe',romanization:'Turkish alphabet',cash:45000,currency:'₺',currencyName:'lira',hintCost:120,continent:'asia',visa:'Tourist E-Visa (90 days)',lede:'Begin where continents meet along the Bosporus with ₺45,000 and whatever Turkish you carry in your head.'},
+  saudi_arabia:{country:'Saudi Arabia',language:'Arabic',script:'العربية',romanization:'transliteration',cash:5500,currency:'﷼ ',currencyName:'riyal',hintCost:15,continent:'asia',visa:'Tourist Visa (90 days)',lede:'Begin under the desert towers and incense of Saudi Arabia with ﷼ 5,500 and whatever Arabic you carry in your head.'},
+  philippines:{country:'Philippines',language:'Tagalog',script:'Tagalog',romanization:'Latin alphabet',cash:75000,currency:'₱',currencyName:'pesos',hintCost:200,continent:'asia',visa:'Tourist Visa (30 days)',lede:'Begin between the island ferries of the Philippines with ₱75,000 and whatever Tagalog you carry in your head.'},
+
+  // Europe
+  france:{country:'France',language:'French',script:'Français',romanization:'pronunciation',cash:1800,currency:'€',currencyName:'euro',hintCost:5,continent:'europe',visa:'Schengen Short-Stay (90 days)',lede:'Begin on a sunlit boulevard in France with €1,800 and whatever French you carry in your head.'},
+  germany:{country:'Germany',language:'German',script:'Deutsch',romanization:'pronunciation',cash:1800,currency:'€',currencyName:'euro',hintCost:5,continent:'europe',visa:'Schengen Short-Stay (90 days)',lede:'Begin beside the buzzing train platforms of Germany with €1,800 and whatever German you carry in your head.'},
+  italy:{country:'Italy',language:'Italian',script:'Italiano',romanization:'pronunciation',cash:1800,currency:'€',currencyName:'euro',hintCost:5,continent:'europe',visa:'Schengen Short-Stay (90 days)',lede:'Begin on the cobblestone piazzas of Italy with €1,800 and whatever Italian you carry in your head.'},
+  spain:{country:'Spain',language:'Spanish',script:'Español',romanization:'pronunciation',cash:1800,currency:'€',currencyName:'euro',hintCost:5,continent:'europe',visa:'Schengen Short-Stay (90 days)',lede:'Begin under the warm evening terracotta of Spain with €1,800 and whatever Spanish you carry in your head.'},
+  russia:{country:'Russia',language:'Russian',script:'Русский',romanization:'transliteration',cash:150000,currency:'₽',currencyName:'rubles',hintCost:400,continent:'europe',visa:'Tourist Visa (30 days)',lede:'Begin between the frosted metro stations of Russia with ₽150,000 and whatever Russian you carry in your head.'},
+  greece:{country:'Greece',language:'Greek',script:'Ελληνικά',romanization:'transliteration',cash:1800,currency:'€',currencyName:'euro',hintCost:5,continent:'europe',visa:'Schengen Short-Stay (90 days)',lede:'Begin by the Aegean breezes of Greece with €1,800 and whatever Greek you carry in your head.'},
+  netherlands:{country:'Netherlands',language:'Dutch',script:'Nederlands',romanization:'pronunciation',cash:1800,currency:'€',currencyName:'euro',hintCost:5,continent:'europe',visa:'Schengen Short-Stay (90 days)',lede:'Begin beside the canal bridges of the Netherlands with €1,800 and whatever Dutch you carry in your head.'},
+  sweden:{country:'Sweden',language:'Swedish',script:'Svenska',romanization:'pronunciation',cash:20000,currency:' kr',currencyName:'kronor',hintCost:50,continent:'europe',visa:'Schengen Short-Stay (90 days)',lede:'Begin in the crisp archipelago light of Sweden with 20,000 kr and whatever Swedish you carry in your head.'},
+  poland:{country:'Poland',language:'Polish',script:'Polski',romanization:'pronunciation',cash:8000,currency:' zł',currencyName:'zloty',hintCost:20,continent:'europe',visa:'Schengen Short-Stay (90 days)',lede:'Begin amidst the historic brick market squares of Poland with 8,000 zł and whatever Polish you carry in your head.'},
+
+  // Africa
+  egypt:{country:'Egypt',language:'Arabic',script:'العربية',romanization:'transliteration',cash:55000,currency:'E£ ',currencyName:'pounds',hintCost:150,continent:'africa',visa:'Tourist Visa (30 days)',lede:'Begin beside the dusty afternoon Nile in Egypt with E£ 55,000 and whatever Arabic you carry in your head.'},
+  kenya:{country:'Kenya',language:'Swahili',script:'Kiswahili',romanization:'pronunciation',cash:150000,currency:'KSh ',currencyName:'shillings',hintCost:400,continent:'africa',visa:'Electronic Travel Auth (ETA)',lede:'Begin under the wide acacia skies of Kenya with KSh 150,000 and whatever Swahili you carry in your head.'},
+  nigeria:{country:'Nigeria',language:'Yoruba',script:'Èdè Yorùbá',romanization:'tone marks',cash:1500000,currency:'₦',currencyName:'naira',hintCost:4000,continent:'africa',visa:'Tourist Visa (30 days)',lede:'Begin in the electric pulse of Nigeria with ₦1,500,000 and whatever Yoruba you carry in your head.'},
+  south_africa:{country:'South Africa',language:'Zulu',script:'isiZulu',romanization:'pronunciation',cash:25000,currency:'R ',currencyName:'rand',hintCost:70,continent:'africa',visa:'Visitor Visa (90 days)',lede:'Begin in the mountain shadows of South Africa with R 25,000 and whatever Zulu you carry in your head.'},
+  morocco:{country:'Morocco',language:'Moroccan Arabic',script:'الدارجة',romanization:'transliteration',cash:18000,currency:' DH',currencyName:'dirhams',hintCost:50,continent:'africa',visa:'Tourist Entry (90 days)',lede:'Begin in the labyrinthine spice souks of Morocco with 18,000 DH and whatever Darija you carry in your head.'},
+
+  // North America
+  usa:{country:'United States',language:'English',script:'English',romanization:'spelling',cash:2000,currency:'$',currencyName:'dollars',hintCost:6,continent:'north-america',visa:'B-2 Tourist / ESTA (90 days)',lede:'Begin under the highway lights and neon diners of the United States with $2,000 and whatever English you carry in your head.'},
+  mexico:{country:'Mexico',language:'Spanish',script:'Español',romanization:'pronunciation',cash:25000,currency:'$',currencyName:'pesos',hintCost:70,continent:'north-america',visa:'FMM Tourist (180 days)',lede:'Begin along the jacaranda avenues of Mexico with $25,000 and whatever Spanish you carry in your head.'},
+  canada:{country:'Canada',language:'French',script:'Français',romanization:'pronunciation',cash:2500,currency:'C$',currencyName:'dollars',hintCost:7,continent:'north-america',visa:'eTA Tourist (6 months)',lede:'Begin in the historic stone quarters of Québec with C$ 2,500 and whatever French you carry in your head.'},
+  cuba:{country:'Cuba',language:'Spanish',script:'Español',romanization:'pronunciation',cash:30000,currency:'₱',currencyName:'pesos',hintCost:80,continent:'north-america',visa:'Tourist Card (30 days)',lede:'Begin along the pastel sea wall of Cuba with ₱30,000 and whatever Spanish you carry in your head.'},
+
+  // South America
+  brazil:{country:'Brazil',language:'Portuguese',script:'Português',romanization:'pronunciation',cash:7500,currency:'R$ ',currencyName:'reais',hintCost:20,continent:'south-america',visa:'Tourist Visa (90 days)',lede:'Begin in the tropical pulse of Brazil with R$ 7,500 and whatever Portuguese you carry in your head.'},
+  colombia:{country:'Colombia',language:'Spanish',script:'Español',romanization:'pronunciation',cash:5000000,currency:'$',currencyName:'pesos',hintCost:14000,continent:'south-america',visa:'Tourist Entry (90 days)',lede:'Begin in the lush Andean hills of Colombia with $5,000,000 and whatever Spanish you carry in your head.'},
+  peru:{country:'Peru',language:'Quechua',script:'Runa Simi',romanization:'pronunciation',cash:5500,currency:'S/ ',currencyName:'soles',hintCost:15,continent:'south-america',visa:'Tourist Visa (90 days)',lede:'Begin in the mist-crowned valleys of Peru with S/ 5,500 and whatever Quechua you carry in your head.'},
+  argentina:{country:'Argentina',language:'Spanish',script:'Español',romanization:'pronunciation',cash:1200000,currency:'$',currencyName:'pesos',hintCost:3500,continent:'south-america',visa:'Tourist Entry (90 days)',lede:'Begin along the grand avenues of Argentina with $1,200,000 and whatever Spanish you carry in your head.'},
+
+  // Oceania
+  new_zealand:{country:'New Zealand',language:'Māori',script:'Te Reo Māori',romanization:'macron reading',cash:3000,currency:'NZ$ ',currencyName:'dollars',hintCost:8,continent:'oceania',visa:'NZeTA (90 days)',lede:'Begin between the green harbor shores of New Zealand with NZ$ 3,000 and whatever Māori you carry in your head.'},
+  fiji:{country:'Fiji',language:'Fijian',script:'Na Vosa Vakaviti',romanization:'pronunciation',cash:3500,currency:'FJ$ ',currencyName:'dollars',hintCost:10,continent:'oceania',visa:'Visitor Permit (4 months)',lede:'Begin on the palm-fringed lagoons of Fiji with FJ$ 3,500 and whatever Fijian you carry in your head.'},
+  hawaii:{country:'Hawaii',language:'Hawaiian',script:'ʻŌlelo Hawaiʻi',romanization:'ʻokina & kahakō',cash:2200,currency:'$',currencyName:'dollars',hintCost:6,continent:'oceania',visa:'US Visitor Status (90 days)',lede:'Begin under the trade winds and volcanic peaks of Hawaii with $2,200 and whatever Hawaiian you carry in your head.'}
 };
-const SAVE_CARD_COLORS = { japan:'#2E5077', china:'#A92E27', korea:'#2F684D', hanja:'#2F684D' };
+
+const SAVE_CARD_COLORS = {
+  japan:'#2E5077', china:'#A92E27', korea:'#2F684D', hanja:'#2F684D',
+  thailand:'#632B6C', vietnam:'#A02325', indonesia:'#B83B26', india:'#C85A17',
+  turkey:'#942923', saudi_arabia:'#1B5E20', philippines:'#1565C0',
+  france:'#1A365D', germany:'#374151', italy:'#2E6930', spain:'#9C4221',
+  russia:'#1E3A8A', greece:'#0D47A1', netherlands:'#C05621', sweden:'#2B6CB0', poland:'#852136',
+  egypt:'#8D6E63', kenya:'#3E2723', nigeria:'#1B5E20', south_africa:'#2E7D32', morocco:'#8C2D19',
+  usa:'#1E3A8A', mexico:'#2E7D32', canada:'#991B1B', cuba:'#1565C0',
+  brazil:'#15803D', colombia:'#B45309', peru:'#78350F', argentina:'#0369A1',
+  new_zealand:'#047857', fiji:'#0E7490', hawaii:'#BE185D'
+};
+
 const destination=()=>DESTINATIONS[S.country]||DESTINATIONS.japan;
 function parseCurrencyAmount(value){
   if(typeof value==='number') return Number.isFinite(value)?value:null;
@@ -1029,7 +1118,7 @@ function parseCurrencyAmount(value){
   return Number.isFinite(amount)?amount:null;
 }
 function stateCurrencyAmount(state){
-  for(const key of ['yen','money','cash','funds','yuan','won']){
+  for(const key of ['yen','money','cash','funds','yuan','won','euros','euro','rubles','dollars','baht','dong','rupiah','rupees','lira','riyal','pesos','reais','soles','rand','pounds','shillings','naira','dirhams','kronor','zloty']){
     const amount=parseCurrencyAmount(state?.[key]);
     if(amount!==null) return amount;
   }
@@ -1066,12 +1155,43 @@ function formatStateCurrency(state,destinationData=destination()){
   return destinationData.currency+(amount===null?'—':Math.round(amount).toLocaleString());
 }
 const LOCALES={
-  japan:{brand:'人生',destination:'Your destination / 行き先',play:'プレイ · Play',note:'日本語かローマ字で話してください。あなたの物語は、あなたの言葉で生まれます。',speak:'話す',listen:'🔊 聞く',speechError:'音声エラー',thinking:'相手が考えている',card:'在留カード',back:'← 物語へ',country:'RESIDENCE CARD · 日本国',government:'日本国政府',people:'People · 人間関係',vocab:"Words you've earned · 語彙帳",labels:['日','時','腹','体','資金'],cardLabels:['名前','在留資格','日','場所','空腹','健康','仕事','資金'],hint:'ENTER to speak · *asterisks* for actions · Hint ¥500',times:{morning:'朝',afternoon:'昼',evening:'夕方',night:'夜'},none:'無職 · none'},
-  china:{brand:'人生',destination:'选择目的地',play:'开始游戏',note:'请用中文或拼音说话。你的故事会随着你的话语展开。',speak:'说话',listen:'🔊 聆听',speechError:'音声错误',thinking:'对方正在思考',card:'居留卡',back:'← 返回故事',country:'RESIDENCE CARD · 中国',government:'中华人民共和国',people:'人物关系',vocab:'已学词汇',labels:['天数','时间','饥饿','健康','资金'],cardLabels:['姓名','身份','天数','地点','饥饿','健康','工作','资金'],hint:'ENTER to speak · *asterisks* for actions · Hint ¥500',times:{morning:'早晨',afternoon:'下午',evening:'傍晚',night:'夜晚'},none:'无业'},
-  korea:{brand:'인생',destination:'어디에서 시작할까요?',play:'시작하기',note:'한국어나 로마자로 말해 보세요. 당신의 이야기는 당신의 말로 시작됩니다.',speak:'말하기',listen:'🔊 듣기',speechError:'음성 오류',thinking:'상대가 생각하고 있어요',card:'외국인등록증',back:'← 이야기로',country:'RESIDENCE CARD · 대한민국',government:'대한민국 정부',people:'인간관계',vocab:'배운 단어',labels:['날짜','시간','허기','건강','자금'],cardLabels:['이름','체류 자격','날짜','장소','허기','건강','직업','자금'],hint:'ENTER to speak · *asterisks* for actions · Hint ¥500',times:{morning:'아침',afternoon:'오후',evening:'저녁',night:'밤'},none:'무직'},
-  hanja:{brand:'人生',destination:'어떤 삶을 시작할까요?',play:'始作하기',note:'한글로 대답해도 괜찮습니다. 등장인물의 漢字語를 문맥 속에서 배워 보세요.',speak:'말하기',listen:'듣기',speechError:'음성 오류',thinking:'相對가 생각하고 있어요',card:'人生 기록증',back:'← 이야기로',country:'LIFE RECORD · 韓國 漢字篇',government:'大韓民國',people:'人物 관계',vocab:'배운 漢字語',labels:['日','時','허기','健康','資金'],cardLabels:['姓名','狀態','日','場所','허기','健康','職業','資金'],hint:'ENTER to speak · *asterisks* for actions · Hint ₩500',times:{morning:'아침',afternoon:'午後',evening:'夕方',night:'夜間'},none:'無職'}
+  japan:{brand:'人生',destination:'Your destination / 行き先',play:'プレイ · Play',note:'日本語かローマ字で話してください。あなたの物語は、あなたの言葉で生まれます。',speak:'話す',listen:'🔊 聞く',speechError:'音声エラー',thinking:'相手が考えている',card:'在留カード',back:'← 物語へ',country:'RESIDENCE CARD · 日本国',government:'日本国政府',people:'People · 人間関係',vocab:"Words you've earned · 語彙帳",labels:['日','時','腹','体','資金'],cardLabels:['名前','在留資格','日','場所','空腹','健康','仕事','資金'],times:{morning:'朝',afternoon:'昼',evening:'夕方',night:'夜'},none:'無職 · none'},
+  china:{brand:'人生',destination:'选择目的地',play:'开始游戏',note:'请用中文或拼音说话。你的故事会随着你的话语展开。',speak:'说话',listen:'🔊 聆听',speechError:'音声错误',thinking:'对方正在思考',card:'居留卡',back:'← 返回故事',country:'RESIDENCE CARD · 中国',government:'中华人民共和国',people:'人物关系',vocab:'已学词汇',labels:['天数','时间','饥饿','健康','资金'],cardLabels:['姓名','身份','天数','地点','饥饿','健康','工作','资金'],times:{morning:'早晨',afternoon:'下午',evening:'傍晚',night:'夜晚'},none:'无业'},
+  korea:{brand:'인생',destination:'어디에서 시작할까요?',play:'시작하기',note:'한국어나 로마자로 말해 보세요. 당신의 이야기는 당신의 말로 시작됩니다.',speak:'말하기',listen:'🔊 듣기',speechError:'음성 오류',thinking:'상대가 생각하고 있어요',card:'외국인등록증',back:'← 이야기로',country:'RESIDENCE CARD · 대한민국',government:'대한민국 정부',people:'인간관계',vocab:'배운 단어',labels:['날짜','시간','허기','건강','자금'],cardLabels:['이름','체류 자격','날짜','장소','허기','건강','직업','자금'],times:{morning:'아침',afternoon:'오후',evening:'저녁',night:'밤'},none:'무직'},
+  hanja:{brand:'人生',destination:'어떤 삶을 시작할까요?',play:'始作하기',note:'한글로 대답해도 괜찮습니다. 등장인물의 漢字語를 문맥 속에서 배워 보세요.',speak:'말하기',listen:'듣기',speechError:'음성 오류',thinking:'相對가 생각하고 있어요',card:'人生 기록증',back:'← 이야기로',country:'LIFE RECORD · 韓國 漢字篇',government:'大韓民國',people:'人物 관계',vocab:'배운 漢字語',labels:['日','時','허기','健康','資金'],cardLabels:['姓名','狀態','日','場所','허기','健康','職業','資金'],times:{morning:'아침',afternoon:'午後',evening:'夕方',night:'夜間'},none:'無職'}
 };
-const locale=()=>LOCALES[S.country]||LOCALES.japan;
+
+function locale(){
+  const d = destination();
+  const formattedHint = `ENTER to speak · *asterisks* for actions · Hint ${formatHintCost(d)}`;
+  if(LOCALES[S.country]){
+    return {
+      ...LOCALES[S.country],
+      hint: formattedHint
+    };
+  }
+  return {
+    brand:'人生',
+    destination:'Your destination / 行き先',
+    play:`Play · ${d.country}`,
+    note:`Speak in ${d.language} or ${d.romanization}. Your story is generated as you live it.`,
+    speak:'Speak',
+    listen:'🔊 Listen',
+    speechError:'Audio error',
+    thinking:'Thinking…',
+    card:'RESIDENCE CARD',
+    back:'← Back to story',
+    country:`RESIDENCE CARD · ${d.country.toUpperCase()}`,
+    government:`Government of ${d.country}`,
+    people:'People · Relationships',
+    vocab:"Words you've earned",
+    labels:['Day','Time','Hunger','Health','Funds'],
+    cardLabels:['Name','Status','Day','Location','Hunger','Health','Work','Funds'],
+    hint: formattedHint,
+    times:{morning:'Morning',afternoon:'Afternoon',evening:'Evening',night:'Night'},
+    none:'Unemployed · none'
+  };
+}
 const languageDescription=()=>S.country==='hanja'?({
   zero:'a Hanja beginner. Use only one very common Hanja word per NPC turn, surrounded by easy Hangul so its meaning is obvious from context.',
   basic:'a basic Hanja learner. Use 2-3 common Sino-Korean words in Hanja per NPC turn, with natural Hangul particles and endings.',
@@ -1091,10 +1211,10 @@ HANJA MODE — critical:
 - FEEDBACK coaches the player's Korean gently; when useful, show the relevant Hanja spelling and Hangul reading.
 `:'';
 
-const sceneEnabled=()=>CURRENT_PLAN.pictures || (CURRENT_USER||'').toLowerCase()==='miara';
-// const imageContinuityRules=()=>sceneEnabled()?`
+const imagePromptForModelEnabled=()=>CURRENT_PLAN.pictures || (CURRENT_USER||'').toLowerCase()==='miara';
+// const imageContinuityRules=()=>imagePromptForModelEnabled()?`
 // IMAGE CHARACTER CONTINUITY:
-// - Include at least one attractive adult who is naturally present in the current scene. Make that person a prominent principal subject—not a tiny, distant, obscured, or incidental background figure—and frame their face and body clearly enough to establish their identity.
+// - Include at least one attractive adult who is naturally present in the current imagePromptForModel. Make that person a prominent principal subject—not a tiny, distant, obscured, or incidental background figure—and frame their face and body clearly enough to establish their identity.
 // - STATE.appearances is the permanent character-profile registry. Create an entry immediately for EVERY named person introduced in the story, including ${S.name}; do this whether or not that person appears in the current image. Never delete an existing entry.
 // - Every profile must be an object with detailed face, height, hair, personality, and clothing fields. Face must describe apparent age.  Hair must give color, length, texture, and style. Personality must record stable traits and mannerisms.
 // - Clothing should note five articles of clothing the character is wearing with the colors for each.
@@ -1102,13 +1222,13 @@ const sceneEnabled=()=>CURRENT_PLAN.pictures || (CURRENT_USER||'').toLowerCase()
 // - Never use a real public figure or celebrity as a visual reference.
 // `:'';
 const imageContinuityRules = () => "";
-/*const sceneOutputFormat=()=>sceneEnabled()?`@@SCENE@@
+/*const imagePromptForModelOutputFormat=()=>imagePromptForModelEnabled()?`@@IMAGE_PROMPT_FOR_MODEL@@
 (visual character descriptions only. For each visible character, give their name followed by face, hair, build, and current clothing, reusing STATE.appearances and memory exactly. Be concise. Do not mention location, background, objects, action, pose, lighting, weather, composition, or mood.)
 `:'';*/
-const sceneOutputFormat=()=>sceneEnabled()?`@@SCENE@@
-(current environment such as location, including character names and five articles of clothing, hair style, hair color for an image model to use as a prompt; do NOT return prose, return a comma-separated list of features the image should depict)
+const imagePromptForModelOutputFormat=()=>imagePromptForModelEnabled()?`@@IMAGE_PROMPT_FOR_MODEL@@
+(Do NOT return prose. current location, character names and five articles of clothing, hair style, hair color for an image model to use as a prompt; do NOT return prose, return a comma-separated list of features the image should depict. Return a sex act if relevant, such as sex, oral sex, anal sex.)
 `:'';
-//const appearancesStateFormat=()=>sceneEnabled()?',"appearances":{"character name":{"face":"apparent age, shape, skin, eyes, brows, nose, mouth, distinguishing features","height":"approximate measurement, build, posture","hair":"color, length, texture, style","personality":"stable traits and mannerisms","clothing":[{"article":"specific garment/accessory","color":"precise color","details":"material, cut, pattern, condition, distinctive features"}]}}':'';
+//const appearancesStateFormat=()=>imagePromptForModelEnabled()?',"appearances":{"character name":{"face":"apparent age, shape, skin, eyes, brows, nose, mouth, distinguishing features","height":"approximate measurement, build, posture","hair":"color, length, texture, style","personality":"stable traits and mannerisms","clothing":[{"article":"specific garment/accessory","color":"precise color","details":"material, cut, pattern, condition, distinctive features"}]}}':'';
 const appearancesStateFormat=()=>"";
 const SYSTEM = () => `You are the game engine of 人生 (JINSEI), a slice-of-life text adventure set in present-day ${destination().country} that doubles as a ${destination().language} teacher. The player, ${S.name}, has just moved to ${destination().country} alone and must build an entire life — job hunting, apartment, friendships, romance, maybe marriage, visa renewals, festivals, illness, everything — over months of in-game time. The player's ${destination().language} level: ${languageDescription()}
 
@@ -1127,8 +1247,8 @@ STORY RULES:
 - Award a "milestone" ONLY for major life events: FIRST FRIEND, GOT A JOB, APARTMENT, FIRST DATE, PROMOTION, ENGAGED, MARRIED, VISA RENEWED, DIED, etc. (short, in caps, max 3 words). Otherwise write NONE.
 - Teach: NPC lines should be natural for the player's level, and each turn introduce 0-2 genuinely useful words.
 - Judge the player's ${destination().language} in FEEDBACK: UNDERSTOOD yes/partial/no. Give ONE short coaching NOTE and, if helpful, a corrected/improved sentence in BETTER (${destination().language} + ${destination().romanization} in parentheses). Be encouraging, never pedantic. If there is no player utterance to judge, write UNDERSTOOD: none, NOTE: none, BETTER: none.
-- Keep everything SHORT. Narration 2-3 sentences. One NPC line per turn, 1-2 sentences.${sceneEnabled()?' The NARRATION text is also used directly as the image-generation prompt, so make it visually concrete: establish the place, lighting, visible people, objects, action, and mood without writing a separate image prompt.':''}
-- The SCENE text should not be prose. It should return five articles of clothing of the NPC, their hair length and hair color.
+- Keep everything SHORT. Narration 2-3 sentences. One NPC line per turn, 1-2 sentences.${imagePromptForModelEnabled()?' The NARRATION text is also used directly as the image-generation prompt, so make it visually concrete: establish the place, lighting, visible people, objects, action, and mood without writing a separate image prompt.':''}
+- The imagePromptForModel text should not be prose. It should return five articles of clothing of the NPC, their hair length and hair color.
 - Every turn must include a conversation with an NPC. Always include @@NPC@@ with a natural line addressed to the player, and let that line create the opening for the player's next reply. Never end narration or dialogue with a meta-instruction, an action menu, or a yes/no action prompt.
 
 
@@ -1144,8 +1264,8 @@ SURVIVAL — HUNGER, HEALTH, DEATH: This life has real stakes. Track "hunger" an
 
 COUNTRY PRIORITY: The selected destination is ${destination().country}. Every place, institution, social custom, currency, language correction, immigration rule, and daily detail MUST belong to ${destination().country}. Do not mention Japan, Japanese, yen, or Japanese-specific institutions unless the selected destination is Japan.
 
-OUTPUT FORMAT — @@SCENE@@ should come FIRST. Respond in PLAIN TEXT ONLY — no markdown, no code fences, no JSON wrapper around the whole thing — using EXACTLY these markers, each alone on its own line, in this exact order. You must generate ALL sections through to @@END@@ on every turn without stopping early: @@SCENE@@, @@NARRATION@@, @@NPC@@, @@STATE@@, @@FEEDBACK@@, @@VOCAB@@, @@SUGGESTIONS@@, @@MILESTONE@@, and @@END@@ are all required.${sceneEnabled()?' @@SCENE@@ is mandatory and must contain only the minimal character description requested below.':' Do not output @@SCENE@@.'} Write NONE where a section does not apply. 
-${sceneOutputFormat()}
+OUTPUT FORMAT — @@IMAGE_PROMPT_FOR_MODEL@@ should come FIRST. Respond in PLAIN TEXT ONLY — no markdown, no code fences, no JSON wrapper around the whole thing — using EXACTLY these markers, each alone on its own line, in this exact order. You must generate ALL sections through to @@END@@ on every turn without stopping early: @@IMAGE_PROMPT_FOR_MODEL@@, @@NARRATION@@, @@NPC@@, @@STATE@@, @@FEEDBACK@@, @@VOCAB@@, @@SUGGESTIONS@@, @@MILESTONE@@, and @@END@@ are all required.${imagePromptForModelEnabled()?' @@IMAGE_PROMPT_FOR_MODEL@@ is mandatory and must contain only the minimal character description requested below.':' Do not output @@IMAGE_PROMPT_FOR_MODEL@@.'} Write NONE where a section does not apply. 
+${imagePromptForModelOutputFormat()}
 @@NARRATION@@
 (2-3 sentences, second person, English, present tense)
 @@NPC@@
@@ -1154,7 +1274,7 @@ JP: (${destination().language} line)
 ROMAJI: (${destination().romanization} reading)
 EN: (English translation)
 @@STATE@@
-(one single-line JSON object, no line breaks inside it: {"day":int,"time":"morning|afternoon|evening|night","location":"short place name","yen":int,"hunger":0-100,"health":0-100,"alive":true|false,"job":"job title or null","visa":"visa status","relationships":[{"name":"...","role":"...","level":1-5}]${appearancesStateFormat()},"flags":["short plot memory strings, max 10"]}.${sceneEnabled()?' Every person profile needs at least 5 clothing entries. Copy forward every existing person and every established detail.':''})
+(one single-line JSON object, no line breaks inside it: {"day":int,"time":"morning|afternoon|evening|night","location":"short place name","yen":int,"hunger":0-100,"health":0-100,"alive":true|false,"job":"job title or null","visa":"visa status","relationships":[{"name":"...","role":"...","level":1-5}]${appearancesStateFormat()},"summary":["short plot summary, recursively summarized"]}.${imagePromptForModelEnabled()?' Every person profile needs at least 5 clothing entries. Copy forward every existing person and every established detail.':''})
 @@FEEDBACK@@
 UNDERSTOOD: yes|partial|no|none
 NOTE: (one short coaching sentence, or none)
@@ -1167,7 +1287,7 @@ BETTER: (improved ${destination().language} with ${destination().romanization} i
 (CAPS LABEL or NONE)
 @@END@@
 
-Never deviate from this format, never add commentary before @@SCENE@@ or after @@END@@. The state you return is the new authoritative state — update it every turn, carry forward what hasn't changed, and use flags as your plot memory.`;
+Never deviate from this format, never add commentary before @@IMAGE_PROMPT_FOR_MODEL@@ or after @@END@@. The state you return is the new authoritative state — update it every turn, carry forward what hasn't changed, and use flags as your plot memory.`;
 /* ================= DOM ================= */
 const $ = id => document.getElementById(id);
 const stream = $('stream');
@@ -1185,6 +1305,10 @@ function updateDestinationUI(){
   document.querySelectorAll('#levels .level-btn').forEach((button,index)=>{
     button.querySelector('.jp').textContent=levelCopy[index][0];
     button.querySelector('.en').textContent=levelCopy[index][1];
+  });
+  updateInputPrompt();
+  document.querySelectorAll('#destinations .destination-btn').forEach(b=>{
+    b.classList.toggle('sel', b.dataset.country===S.country);
   });
   updateInputPrompt();
   applyLocale();
@@ -1206,12 +1330,48 @@ function applyLocale(){
   ['card-name-label','card-status-label','card-day-label','card-location-label','card-hunger-label','card-health-label','card-work-label','card-funds-label'].forEach((id,i)=>$(id).textContent=l.cardLabels[i]);
   $('people-title').textContent=l.people; $('vocab-title').textContent=l.vocab;
 }
-document.querySelectorAll('#destinations .destination-btn').forEach(b=>{
-  b.onclick=()=>{
-    document.querySelectorAll('#destinations .destination-btn').forEach(x=>x.classList.remove('sel'));
-    b.classList.add('sel'); S.country=b.dataset.country; updateDestinationUI();
-  };
-});
+
+function renderDestinationsList(filterContinent='all'){
+  const container=$('destinations');
+  if(!container) return;
+  container.innerHTML='';
+  Object.entries(DESTINATIONS).forEach(([id,d])=>{
+    const cont=d.continent||'asia';
+    if(filterContinent!=='all'){
+      if(filterContinent==='americas'){
+        if(cont!=='north-america'&&cont!=='south-america') return;
+      }else if(cont!==filterContinent){
+        return;
+      }
+    }
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.className='level-btn destination-btn'+(S.country===id?' sel':'');
+    btn.dataset.country=id;
+    btn.dataset.continent=cont;
+    btn.innerHTML=`<span class="jp">${d.script}</span><span class="en">${d.country} · ${d.language}</span>`;
+    btn.onclick=()=>{
+      document.querySelectorAll('#destinations .destination-btn').forEach(x=>x.classList.remove('sel'));
+      btn.classList.add('sel');
+      S.country=id;
+      updateDestinationUI();
+    };
+    container.appendChild(btn);
+  });
+}
+
+function initContinentTabs(){
+  document.querySelectorAll('#dest-continents .dest-tab').forEach(tab=>{
+    tab.onclick=()=>{
+      document.querySelectorAll('#dest-continents .dest-tab').forEach(t=>t.classList.remove('sel'));
+      tab.classList.add('sel');
+      renderDestinationsList(tab.dataset.continent);
+    };
+  });
+}
+
+renderDestinationsList();
+initContinentTabs();
 updateDestinationUI();
 document.querySelectorAll('#world-toggle .level-btn').forEach(b=>{
   b.onclick=()=>{
@@ -1342,7 +1502,7 @@ let pendingCheckoutPlan=null;
 const GUEST_LIVES_KEY='jinsei_guest_lives_v2';
 const LEGACY_GUEST_SAVE_KEY='jinsei_guest_save_v1';
 const BILLING_COPY={
-  kicker:'Choose your journey',title:'Keep your life going',free:n=>`The free version includes 20 turns. ${n} remaining.`,unlimited:'Unlimited',pictures:'Unlimited + Pictures',period:'/ month',uCopy:'Unlimited story turns, saved lives, and WaveNet speech.',pCopy:'Everything in Unlimited, with a generated scene picture for every game turn.',chooseU:'Choose Unlimited',chooseP:'Choose Pictures',current:'Current plan',manage:'Manage or cancel subscription',foot:'Recurring monthly. Cancel any time. Pictures are limited to one generation per game turn.'
+  kicker:'Choose your journey',title:'Keep your life going',free:n=>`The free version includes 20 turns. ${n} remaining.`,unlimited:'Unlimited',pictures:'Unlimited + Pictures',period:'/ month',uCopy:'Unlimited story turns, saved lives, and WaveNet speech.',pCopy:'Everything in Unlimited, with a generated imagePromptForModel picture for every game turn.',chooseU:'Choose Unlimited',chooseP:'Choose Pictures',current:'Current plan',manage:'Manage or cancel subscription',foot:'Recurring monthly. Cancel any time. Pictures are limited to one generation per game turn.'
 };
 
 function billingCopy(){ return BILLING_COPY; }
@@ -1747,8 +1907,8 @@ async function start(){
   renderCard();
   await saveGame();
   const openingDirective=S.country==='japan'
-    ? `[GAME START] Generate a brand-new opening for this life at Narita International Airport, Terminal 1 Arrivals, in the Tokyo area. The player has just arrived in Japan. Keep STATE.location at "Narita International Airport, Terminal 1 Arrivals" and STATE.time as "afternoon" for this opening turn. Create an original, immediate story hook grounded in the arrivals hall; make it tactile and locally credible, explain only as much as feels natural, and let the first NPC encounter emerge from the hook. Record a concise version of the opening hook in STATE.flags. It is Day 1; set funds to ${d.cash}, hunger to 85, health to 100, and visa to "${d.visa}". The player must use Japanese to navigate the scene. Give suggestions suited to their level.`
-    : `[GAME START] Generate a brand-new opening for this life. Invent a fresh, specific location somewhere in ${d.country}, choose a fitting time of day, and create an original immediate story hook. Begin in medias res like the first page of a grounded contemporary novel: make the generated location tactile and locally credible, explain only as much as feels natural, and let the first NPC encounter emerge from the hook. Set STATE.location and STATE.time to the location and time you generate, and record a concise version of the opening hook in STATE.flags. It is Day 1; set funds to ${d.cash}, hunger to 85, health to 100, and visa to "${d.visa}". The player must use ${d.language} to navigate the scene. Give suggestions suited to their level.`;
+    ? `[GAME START] Generate a brand-new opening for this life at Narita International Airport, Terminal 1 Arrivals, in the Tokyo area. The player has just arrived in Japan. Keep STATE.location at "Narita International Airport, Terminal 1 Arrivals" and STATE.time as "afternoon" for this opening turn. Create an original, immediate story hook grounded in the arrivals hall; make it tactile and locally credible, explain only as much as feels natural, and let the first NPC encounter emerge from the hook. Record a concise version of the opening hook in STATE.flags. It is Day 1; set funds to ${d.cash}, hunger to 85, health to 100, and visa to "${d.visa}". The player must use Japanese to navigate the imagePromptForModel. Give suggestions suited to their level.`
+    : `[GAME START] Generate a brand-new opening for this life. Invent a fresh, specific location somewhere in ${d.country}, choose a fitting time of day, and create an original immediate story hook. Begin in medias res like the first page of a grounded contemporary novel: make the generated location tactile and locally credible, explain only as much as feels natural, and let the first NPC encounter emerge from the hook. Set STATE.location and STATE.time to the location and time you generate, and record a concise version of the opening hook in STATE.flags. It is Day 1; set funds to ${d.cash}, hunger to 85, health to 100, and visa to "${d.visa}". The player must use ${d.language} to navigate the imagePromptForModel. Give suggestions suited to their level.`;
   await enqueueTurn(null, openingDirective);
 }
 
@@ -1850,17 +2010,17 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
   const imageTurnNumber = playerText===null ? 0 : (S.turnCount||0)+1;
 
   /* live DOM scaffolding — built incrementally as revealed text grows */
-  let entry=null, narrDiv=null, sceneWrap=null, sceneDebug=null;
+  let entry=null, narrDiv=null, imagePromptForModelWrap=null, imagePromptForModelDebug=null;
   let npcDiv=null, npcWho=null, npcJp=null, npcRomaji=null, npcEn=null;
   let buf='', sections={}, gotAnyText=false, thinkGone=false;
-  let lastSceneDebugText='';
+  let lastimagePromptForModelDebugText='';
   let composerReleased=false;
   let stateCommitted=false;
 
   function isStateDone(rawBuf, isDone=doneReading){
-    const re=/@@(NARRATION|NPC|FEEDBACK|VOCAB|SUGGESTIONS|SCENE|STATE|MILESTONE|END)@@/g;
+    const re=/@@(NARRATION|NPC|FEEDBACK|VOCAB|SUGGESTIONS|IMAGE_PROMPT_FOR_MODEL|imagePromptForModel|SCENE|STATE|MILESTONE|END)@@/gi;
     const matches=[...rawBuf.matchAll(re)];
-    const stateIdx=matches.findIndex(m=>m[1]==='STATE');
+    const stateIdx=matches.findIndex(m=>m[1].toUpperCase()==='STATE');
     if(stateIdx===-1) return false;
     if(stateIdx < matches.length - 1) return true;
     const stateStart = matches[stateIdx].index + matches[stateIdx][0].length;
@@ -1914,9 +2074,9 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
     if(entry) return;
     removeThink();
     entry=document.createElement('div'); entry.className='entry';
-    if(sceneEnabled() && S.lifeId){
-      sceneWrap=document.createElement('div'); sceneWrap.className='scene-img loading';
-      entry.appendChild(sceneWrap);
+    if(imagePromptForModelEnabled() && S.lifeId){
+      imagePromptForModelWrap=document.createElement('div'); imagePromptForModelWrap.className='imagePromptForModel-img loading';
+      entry.appendChild(imagePromptForModelWrap);
     }
     narrDiv=document.createElement('div'); narrDiv.className='narr live';
     entry.appendChild(narrDiv);
@@ -1933,24 +2093,24 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
     const rb=document.createElement('button'); rb.className='reveal-btn'; rb.textContent='訳を見る';
     rb.onclick=()=>{npcDiv.classList.add('revealed'); rb.remove();};
     npcDiv.appendChild(npcWho); npcDiv.appendChild(npcJp); npcDiv.appendChild(npcRomaji); npcDiv.appendChild(npcEn); npcDiv.appendChild(rb);
-    if(sceneDebug && sceneDebug.parentNode===entry){
-      entry.insertBefore(npcDiv, sceneDebug);
+    if(imagePromptForModelDebug && imagePromptForModelDebug.parentNode===entry){
+      entry.insertBefore(npcDiv, imagePromptForModelDebug);
     } else {
       entry.appendChild(npcDiv);
     }
   }
-  function updateSceneDebug(rawText=buf){
-    if(!sceneEnabled() || !rawText) return false;
-    if(rawText===lastSceneDebugText) return false;
-    lastSceneDebugText=rawText;
+  function updateimagePromptForModelDebug(rawText=buf){
+    if(!imagePromptForModelEnabled() || !rawText) return false;
+    if(rawText===lastimagePromptForModelDebugText) return false;
+    lastimagePromptForModelDebugText=rawText;
     ensureEntry();
-    if(!sceneDebug){
-      sceneDebug=document.createElement('pre');
-      sceneDebug.className='scene-debug';
-      entry.appendChild(sceneDebug);
+    if(!imagePromptForModelDebug){
+      imagePromptForModelDebug=document.createElement('pre');
+      imagePromptForModelDebug.className='imagePromptForModel-debug';
+      entry.appendChild(imagePromptForModelDebug);
     }
-    sceneDebug.textContent=rawText;
-    sceneDebug.scrollTop=sceneDebug.scrollHeight;
+    imagePromptForModelDebug.textContent=rawText;
+    imagePromptForModelDebug.scrollTop=imagePromptForModelDebug.scrollHeight;
     return true;
   }
   function updateLive(){
@@ -1979,7 +2139,7 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
         releaseComposer();
       }
     }
-    updateSceneDebug(buf);
+    updateimagePromptForModelDebug(buf);
     if(changed) scrollDown();
   }
 
@@ -1991,25 +2151,25 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
   const REVEAL_CHARS_PER_SEC = 220;
   let revealedLen=0, doneReading=false, renderScheduled=false, lastFrameTime=null;
   let resolveFinished; const finished = new Promise(res=>{ resolveFinished=res; });
-  let sceneImageStarted=false;
+  let imagePromptForModelImageStarted=false;
 
-  function maybeStartSceneImage(sourceSections=sections){
-    /* @@SCENE@@ comes first and @@NARRATION@@ immediately follows it.
+  function maybeStartimagePromptForModelImage(sourceSections=sections){
+    /* @@IMAGE_PROMPT_FOR_MODEL@@ comes first and @@NARRATION@@ immediately follows it.
        The arrival of @@NARRATION@@ (or stream completion) proves that the
-       scene text is fully retrieved. */
-    if(sceneImageStarted || !sceneWrap) return;
-    if(sourceSections.SCENE!==undefined && (sourceSections.NARRATION!==undefined || doneReading)){
-      const sceneText=(sourceSections.SCENE||'').trim();
-      if(!sceneText || sceneText.toLowerCase()==='none'){
-        sceneImageStarted=true;
-        sceneWrap.remove();
+       imagePromptForModel text is fully retrieved. */
+    if(imagePromptForModelImageStarted || !imagePromptForModelWrap) return;
+    if(sourceSections.imagePromptForModel!==undefined && (sourceSections.NARRATION!==undefined || doneReading)){
+      const imagePromptForModelText=(sourceSections.imagePromptForModel||'').trim();
+      if(!imagePromptForModelText || imagePromptForModelText.toLowerCase()==='none'){
+        imagePromptForModelImageStarted=true;
+        imagePromptForModelWrap.remove();
         return;
       }
-      sceneImageStarted=true;
-      attachSceneImage(
-        sceneWrap,
+      imagePromptForModelImageStarted=true;
+      attachimagePromptForModelImage(
+        imagePromptForModelWrap,
         (sourceSections.NARRATION||'').trim(),
-        sceneText,
+        imagePromptForModelText,
         imageTurnNumber
       );
     }
@@ -2029,7 +2189,7 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
       revealedLen=Math.min(target, revealedLen+step);
       sections=parseSections(buf.slice(0, revealedLen));
       updateLive();
-      maybeStartSceneImage();
+      maybeStartimagePromptForModelImage();
     }
     if(revealedLen<target){
       scheduleRender();
@@ -2084,11 +2244,11 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
         if(typeof content==='string' && content){
           buf += content;
           gotAnyText=true;
-          if(sceneEnabled()){
+          if(imagePromptForModelEnabled()){
             ensureEntry();
             const rawSections=parseSections(buf);
-            updateSceneDebug(buf);
-            maybeStartSceneImage(rawSections);
+            updateimagePromptForModelDebug(buf);
+            maybeStartimagePromptForModelImage(rawSections);
           }
           maybeCommitState(buf);
           scheduleRender();
@@ -2100,9 +2260,9 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
     streamOk = gotAnyText; /* keep whatever partial content arrived */
   } finally {
     doneReading = true;
-    if(sceneEnabled()){
-      maybeStartSceneImage(parseSections(buf));
-      updateSceneDebug(buf);
+    if(imagePromptForModelEnabled()){
+      maybeStartimagePromptForModelImage(parseSections(buf));
+      updateimagePromptForModelDebug(buf);
     }
     maybeCommitState(buf);
     resolveStateReady();
@@ -2156,18 +2316,18 @@ Respond per the rules. Remember the language gate and continue ongoing arcs from
     enableDictionaryText(npcJp,jpText);
   }
 
-  await processTurnMetadata({sections,playerText,userMsg,buf,entry,sceneWrap,sceneImageStarted,imageTurnNumber,stateCommitted});
+  await processTurnMetadata({sections,playerText,userMsg,buf,entry,imagePromptForModelWrap,imagePromptForModelImageStarted,imageTurnNumber,stateCommitted});
   releaseComposer();
 }
 
 /* Everything after the visible NPC exchange is deliberately handled by the
    queued background task. The composer is already available while this
    applies structured sections and starts image/persistence work. */
-async function processTurnMetadata({sections,playerText,userMsg,buf,entry,sceneWrap,sceneImageStarted,imageTurnNumber,stateCommitted}){
+async function processTurnMetadata({sections,playerText,userMsg,buf,entry,imagePromptForModelWrap,imagePromptForModelImageStarted,imageTurnNumber,stateCommitted}){
   await Promise.resolve();
   finalizeTurn(sections, playerText!==null, entry, stateCommitted);
-  if(!sceneImageStarted && sceneWrap){
-    attachSceneImage(sceneWrap, (sections.NARRATION||'').trim(), (sections.SCENE||'').trim(), imageTurnNumber);
+  if(!imagePromptForModelImageStarted && imagePromptForModelWrap){
+    attachimagePromptForModelImage(imagePromptForModelWrap, (sections.NARRATION||'').trim(), (sections.imagePromptForModel||'').trim(), imageTurnNumber);
   }
 
   if(!stateCommitted){
@@ -2190,7 +2350,7 @@ async function processTurnMetadata({sections,playerText,userMsg,buf,entry,sceneW
   maybeShowSignupNudge(entry);
 }
 
-/* ================= PAID SCENE IMAGE ================= */
+/* ================= PAID imagePromptForModel IMAGE ================= */
 async function promotePersistedImage(img,generationId,objectUrl){
   const savedUrl=`/api/generated-image?id=${encodeURIComponent(generationId)}`;
   for(let attempt=0;attempt<30;attempt++){
@@ -2217,13 +2377,13 @@ async function promotePersistedImage(img,generationId,objectUrl){
     }
   }
 }
-async function attachSceneImage(wrap, narration, scene, turnNumber){
+async function attachimagePromptForModelImage(wrap, narration, imagePromptForModel, turnNumber){
   try{
     const r = await fetch('/api/image', {
       method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin',
       body: JSON.stringify({
         narration,
-        scene,
+        imagePromptForModel,
         appearances:S.state&&S.state.appearances||{},
         country:S.country,
         lifeId:S.lifeId,
@@ -2266,14 +2426,22 @@ async function attachSceneImage(wrap, narration, scene, turnNumber){
 
 /* ================= SECTION PARSING ================= */
 function parseSections(buf){
-  const re=/@@(NARRATION|NPC|FEEDBACK|VOCAB|SUGGESTIONS|SCENE|STATE|MILESTONE|END)@@/g;
+  const re=/@@(NARRATION|NPC|FEEDBACK|VOCAB|SUGGESTIONS|IMAGE_PROMPT_FOR_MODEL|imagePromptForModel|SCENE|STATE|MILESTONE|END)@@/gi;
   const matches=[...buf.matchAll(re)];
   const secs={};
   for(let i=0;i<matches.length;i++){
-    const name=matches[i][1];
+    const rawName=matches[i][1];
+    const name=rawName.toUpperCase();
     const start=matches[i].index+matches[i][0].length;
     const end=i+1<matches.length ? matches[i+1].index : buf.length;
-    secs[name]=buf.slice(start,end).trim();
+    const content=buf.slice(start,end).trim();
+    secs[name]=content;
+    secs[rawName]=content;
+    if(name==='IMAGE_PROMPT_FOR_MODEL'||name==='SCENE'){
+      secs.IMAGE_PROMPT_FOR_MODEL=content;
+      secs.imagePromptForModel=content;
+      secs.SCENE=content;
+    }
   }
   return secs;
 }
@@ -2318,7 +2486,7 @@ function finalizeTurn(sections, hadPlayerTurn, entry, skipState=false){
       f.innerHTML=`<span class="fb-mark">${mark}</span>${esc(fb.note||'')}`+
         (betterOk ? `<div class="better">→ ${esc(fb.better)}</div>` : '');
       const parent=entry||stream;
-      const debug=parent.querySelector?.('.scene-debug');
+      const debug=parent.querySelector?.('.imagePromptForModel-debug');
       if(debug && debug.parentNode===parent) parent.insertBefore(f,debug);
       else parent.appendChild(f);
     }
@@ -2329,7 +2497,7 @@ function finalizeTurn(sections, hadPlayerTurn, entry, skipState=false){
     const m=document.createElement('div');
     m.className='milestone-banner'; m.textContent='◆ '+milestone+' ◆';
     const parent=entry||stream;
-    const debug=parent.querySelector?.('.scene-debug');
+    const debug=parent.querySelector?.('.imagePromptForModel-debug');
     if(debug && debug.parentNode===parent) parent.insertBefore(m,debug);
     else parent.appendChild(m);
     addStamp(milestone);
@@ -2356,17 +2524,20 @@ function finalizeTurn(sections, hadPlayerTurn, entry, skipState=false){
   $('chips').innerHTML='';
   const sugg=(sections.SUGGESTIONS||'').split('\n').map(s=>s.trim())
     .filter(s=>s && s.toUpperCase()!=='NONE').slice(0,3);
+  const cost = getHintCost();
+  const d = destination();
+  const priceDisplay = formatHintCost();
   sugg.forEach(s=>{
     const c=document.createElement('button'); c.className='chip locked';
-    c.innerHTML=`<span class="price">¥${HINT_COST}</span> Hint`;
+    c.innerHTML=`<span class="price">${priceDisplay}</span> Hint`;
     c.onclick=()=>{
       if(c.classList.contains('locked')){
-        if(S.state.yen < HINT_COST){
-          c.classList.add('broke'); c.innerHTML='<span class="price">金欠</span> not enough yen';
-          setTimeout(()=>{c.classList.remove('broke'); c.innerHTML=`<span class="price">¥${HINT_COST}</span> Hint`;},1400);
+        if(S.state.yen < cost){
+          c.classList.add('broke'); c.innerHTML=`<span class="price">${S.country==='japan'?'金欠':'No funds'}</span> not enough ${d.currencyName}`;
+          setTimeout(()=>{c.classList.remove('broke'); c.innerHTML=`<span class="price">${priceDisplay}</span> Hint`;},1400);
           return;
         }
-        S.state.yen -= HINT_COST; S.hintSpend += HINT_COST;
+        S.state.yen -= cost; S.hintSpend += cost;
         c.classList.remove('locked'); c.textContent=s;
         renderCard(); saveGame();
       } else { $('say').value=c.textContent; $('say').focus(); }

@@ -70,7 +70,7 @@ Never expose `OPENROUTER_API_KEY`, `GOOGLE_TTS_API_KEY`, `PADDLE_API_KEY`, `PADD
 Free play includes 20 player turns. The server reserves each turn atomically, so the limit cannot be bypassed by editing browser storage. Guests are tracked with an HTTP-only browser token; creating an account gives a separate free allowance. The arrival narration does not consume a turn.
 
 - **Unlimited — $4.99/month:** unlimited story turns, saved lives, and WaveNet speech.
-- **Unlimited + Pictures — $9.99/month:** everything in Unlimited plus one Replicate FLUX Schnell scene image for every verified game turn.
+- **Unlimited + Pictures — $9.99/month:** everything in Unlimited plus one Replicate FLUX Schnell imagePromptForModel image for every verified game turn.
 
 Pictures require a signed-in subscriber. Each image is tied to one saved life and turn, generated with Replicate, then copied to private Supabase Storage so it continues to work when a life is resumed.
 
@@ -126,8 +126,8 @@ scripts/
 | `POST` | `/api/checkout` | Create a Paddle hosted checkout for a paid plan. |
 | `POST` | `/api/portal` | Open Paddle's customer portal. |
 | `POST` | `/api/paddle-webhook` | Verify Paddle events and update entitlements. |
-| `POST` | `/api/image` | Generate the paid plan's verified-turn scene image. |
-| `GET` | `/api/generated-image?id=…` | Serve an authorized saved private scene image. |
+| `POST` | `/api/image` | Generate the paid plan's verified-turn imagePromptForModel image. |
+| `GET` | `/api/generated-image?id=…` | Serve an authorized saved private imagePromptForModel image. |
 | `GET` | `/health` | Report server, key, and image status. |
 
 The browser sends conversation content to `/api/turn`, but the server controls the OpenRouter key, model, and output-token limit. OpenRouter's OpenAI-compatible streaming events are forwarded to the browser as server-sent events.
