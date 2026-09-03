@@ -357,8 +357,8 @@ async function generateimagePromptForModelImage(request, user) {
   //const promptDirection = 'NSFW, cleavage, sex, oral sex, anal sex, lesbian, futa, pussy, BDSM, porn, one character';
   //const promptDirection = 'cleavage, sex, anal sex, BDSM, hardcore porn, hentai'
   const isNsfw = nsfw === true || nsfw === 'true' || nsfw === 1 || nsfw === '1';
-  let promptDirection = 'cleavage';
-  if (isNsfw) promptDirection += ', sex, anal sex, BDSM, hardcore porn, hentai';
+  let promptDirection = '';
+  if (isNsfw) promptDirection += ', nudity, sex, anal sex, BDSM, hardcore porn, hentai';
   const imagePrompt = [
     narration,
     promptText,
